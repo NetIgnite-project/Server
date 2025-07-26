@@ -8,7 +8,7 @@ export default defineEventHandler(async (event) => {
     if (!userinfo) return;
 
     const deviceID = parseInt(getRouterParam(event, "id") as string, 10);
-    if (Number.isNaN(deviceID) && !Number.isSafeInteger(deviceID)) {
+    if (Number.isNaN(deviceID) || !Number.isSafeInteger(deviceID)) {
         setResponseStatus(event, 400);
         return { status: "ERROR", message: "Invalid Device ID" };
     }

@@ -10,7 +10,7 @@ export default defineEventHandler(async (event) => {
     if (!userinfo) return;
 
     const agentID = parseInt(getRouterParam(event, "id") as string, 10);
-    if (Number.isNaN(agentID) && !Number.isSafeInteger(agentID)) {
+    if (Number.isNaN(agentID) || !Number.isSafeInteger(agentID)) {
         setResponseStatus(event, 400);
         return { status: "ERROR", message: "Invalid Agent ID" };
     }
