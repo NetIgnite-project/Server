@@ -1,0 +1,11 @@
+services:
+  netignite-server:
+    image: ghcr.io/netignite-project/server:latest
+    container_name: netignite-server
+    restart: unless-stopped
+    ports:
+      - "18232:18232"
+    volumes:
+      - /opt/netignite/data:/opt/netignite/data
+      - /opt/netignite/config:/opt/netignite/config
+      - /opt/netignite/logs:/opt/netignite/logs
