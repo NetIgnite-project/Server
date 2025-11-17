@@ -29,6 +29,14 @@ async function createAdminUserIfNoneExists() {
         await Bun.write('./data/initial_admin_credentials',
             `Username: admin\nPassword: ${randomAdminPassword}\n`
         );
+
+        Logger.log(
+            `No users found in database. Created default admin user.\n` +
+            `Username: admin\n` +
+            `Password: ${randomAdminPassword}\n` +
+            `Credentials have also been saved to ./data/initial_admin_credentials`
+        );
+
         if (!defaultAdmin) {
             Logger.error("Error creating default admin user");
             process.exit(1);
