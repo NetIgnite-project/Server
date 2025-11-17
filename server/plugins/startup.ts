@@ -4,8 +4,9 @@ import { DBStorage } from "../db";
 import { Logger } from "../utils/logger";
 import { SessionHandler } from "../utils/auth/sessions";
 import crypto from 'crypto';
+import { AuthHandler } from "../utils/auth/handler";
 
-async function createAdminUser() {
+async function createAdminUserIfNoneExists() {
 
     const allUsers = await DBStorage.Users.getAll();
 
@@ -43,7 +44,8 @@ export default defineNitroPlugin(async () => {
     await DBStorage.init();
     console.log('DB initialized');
 
-
+    await createAdminUserIfNoneExists();
+    console.log('Admin user check complete');
 
     await SessionHandler.init();
     console.log('Session handler initialized');
