@@ -3,6 +3,27 @@ import { ConfigHandler } from "../utils/config";
 import { DBStorage } from "../db";
 import { Logger } from "../utils/logger";
 import { SessionHandler } from "../utils/auth/sessions";
+import crypto from 'crypto';
+
+async function createAdminUser() {
+
+    const allUsers = await DBStorage.Users.getAll();
+
+    const randomAdminPassword = crypto.randomBytes(32).toString('hex');
+
+    if (!allUsers || allUsers.length === 0) {
+        const defaultAdmin = await DBStorage.Users.insert({
+            username: 'admin',
+            password_hash: await AuthHandler.hashPassword(randomAdminPassword),
+            role: 'admin',
+            favorites: []
+        });
+        if (!defaultAdmin) {
+            Logger.error("Error creating default admin user");
+            process.exit(1);
+        }
+    }
+}
 
 export default defineNitroPlugin(async () => {
 
@@ -21,6 +42,8 @@ export default defineNitroPlugin(async () => {
 
     await DBStorage.init();
     console.log('DB initialized');
+
+
 
     await SessionHandler.init();
     console.log('Session handler initialized');
