@@ -10,7 +10,7 @@ export interface ConfigLike {
 export class ConfigHandler {
 
 	private static readonly configFilePath = process.env.CONFIG_FILE_PATH || './config/config.json';
-	private static readonly sampleConfigFilePath = './config/config.sample.json';
+	private static readonly sampleConfigFilePath = process.env.NETIGNITE_SAMPLE_CONFIG_PATH || './config/config.sample.json';
 
 	private static config: ConfigLike | null = null;
 
