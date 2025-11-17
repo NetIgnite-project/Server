@@ -12,7 +12,12 @@ async function createAdminUserIfNoneExists() {
 
     const randomAdminPassword = crypto.randomBytes(32).toString('hex');
 
-    if (!allUsers || allUsers.length === 0) {
+    if (!allUsers) {
+        Logger.error("Error retrieving users from DB");
+        process.exit(1);
+    }
+
+    if (allUsers.length === 0) {
         const defaultAdmin = await DBStorage.Users.insert({
             username: 'admin',
             password_hash: await AuthHandler.hashPassword(randomAdminPassword),
