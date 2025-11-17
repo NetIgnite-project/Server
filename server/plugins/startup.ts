@@ -10,20 +10,25 @@ async function createAdminUserIfNoneExists() {
 
     const allUsers = await DBStorage.Users.getAll();
 
-    const randomAdminPassword = crypto.randomBytes(32).toString('hex');
-
     if (!allUsers) {
         Logger.error("Error retrieving users from DB");
         process.exit(1);
     }
 
     if (allUsers.length === 0) {
+
+        const randomAdminPassword = crypto.randomBytes(32).toString('hex');
+
         const defaultAdmin = await DBStorage.Users.insert({
             username: 'admin',
             password_hash: await AuthHandler.hashPassword(randomAdminPassword),
             role: 'admin',
             favorites: []
         });
+
+        await Bun.write('./data/initial_admin_credentials',
+            `Username: admin\nPassword: ${randomAdminPassword}\n`
+        );
         if (!defaultAdmin) {
             Logger.error("Error creating default admin user");
             process.exit(1);
