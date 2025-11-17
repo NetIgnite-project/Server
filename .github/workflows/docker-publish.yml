@@ -50,8 +50,8 @@ jobs:
         shell: bash
         run: bun install
       
-      - name: Build Binary
-        run: bun compile linux-x64-baseline ${{ inputs.version }} --no-version-tag
+      #- name: Build Nuxt application
+      #  run: bun run build
       
       - name: Setup Docker
         id: docker-setup

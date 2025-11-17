@@ -37,14 +37,18 @@ jobs:
     - name: Test code
       run: bun test
 
-    - name: Build binaries
-      run: bun compile all ${{ github.event.inputs.version }}
+    - name: Build Nuxt application
+      run: bun run build
+    
+    - name: Create Archive of .output
+      run: |
+        tar -czf app.tar.gz .output
 
     - name: Upload build artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: binaries
-        path: build/bin/*
+        name: app.tar.gz
+        path: app.tar.gz
         retention-days: 1  # Set to 1 day for temporary storage
 
   release:
@@ -58,8 +62,8 @@ jobs:
     - name: Download build artifacts
       uses: actions/download-artifact@v4
       with:
-        name: binaries
-        path: ./binaries
+        name: app.tar.gz
+        path: ./app.tar.gz
 
     - name: Create GitHub Release
       id: create_release
@@ -70,4 +74,4 @@ jobs:
         name: ${{ github.event.inputs.release_name }}
         body: ${{ github.event.inputs.release_notes }}
         prerelease: ${{ github.event.inputs.prerelease }}
-        artifacts: ./binaries/*
+        artifacts: ./app.tar.gz
