@@ -21,6 +21,7 @@ VOLUME [ "/opt/netignite/logs" ]
 EXPOSE 18232/tcp
 
 ENV NITRO_ENV=production
+ENV NITRO_HOST=0.0.0.0
 ENV NITRO_PORT=18232
 
 CMD [ "bun", "run", "./app/server/index.mjs" ]
