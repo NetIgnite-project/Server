@@ -3,6 +3,7 @@ FROM oven/bun:1 AS base
 WORKDIR /opt/netignite/app
 
 COPY . .
+COPY ./config/config.sample.json /opt/netignite/config/config.sample.json
 
 RUN bun install --production
 RUN bun run build
