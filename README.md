@@ -1,6 +1,6 @@
 # NetIgnite Server
 
-NetIgnite is the server-side core of the NetIgnite / Device Power Management platform. It provides:
+NetIgnite Server is the server-side core of the NetIgnite / Device Power Management platform. It provides:
 
 - HTTP/REST API for authentication and management of agents & devices
 - WebSocket "Agent Control Service" for bidirectional control of registered agents (servers / microcontrollers)
