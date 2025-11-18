@@ -59,6 +59,7 @@ function ControlServiceServerHandlerFactory(clients: Map<string, ControllableAge
 
             agent.peerID = peer.id;
             agent.socket = peer.websocket as WebSocket;
+            console.log(peer.websocket)
             clients.set(peer.id, agent);
             Logger.log(`Agent '${agent.id}' connected`);
         },
