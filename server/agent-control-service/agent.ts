@@ -1,5 +1,4 @@
 import { EncodingUtils } from "@/shared/encoding";
-import WebSocket from "crossws/websocket";
 import { AgentCMDRegistry } from "./commands/registry";
 import { AgentCommand } from "./commands/message";
 import { AgentControlService } from ".";
@@ -7,16 +6,24 @@ import { AgentControlService } from ".";
 export type AgentID = number;
 export type AgentsDB = Map<AgentID, ControllableAgent>;
 
+type Socket = {
+    websocket: {
+        readyState?: number | undefined;
+    }
+    send(data: string | ArrayBufferLike | Blob | ArrayBufferView): void;
+    close(): void;
+}
+
 type ControllableOnlineAgent = ControllableAgent & {
     peerID: string;
-    socket: WebSocket;
+    socket: Socket;
 }
 
 
 export class ControllableAgent implements ControllableAgent.IConfig {
 
     public peerID: string | null = null;
-    public socket: WebSocket | null = null;
+    public socket: Socket | null = null;
     
     public onMessage: ((data: string) => void) | null = null;
 
@@ -33,7 +40,7 @@ export class ControllableAgent implements ControllableAgent.IConfig {
     }
 
     public isOnline(): this is ControllableOnlineAgent {
-        return this.socket !== null && this.peerID !== null && this.socket.readyState === WebSocket.OPEN;
+        return this.socket !== null && this.peerID !== null && this.socket.websocket.readyState === WebSocket.OPEN;
     }
 
     async sendCommand<C extends AgentCMDRegistry.Commands>(command: C, payload: AgentCMDRegistry.Payload<C>, withResponse?: true): Promise<AgentCMDRegistry.Response<C> | null>;
