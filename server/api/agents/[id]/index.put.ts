@@ -1,8 +1,5 @@
-import { AgentControlService } from "~/server/agent-control-service";
 import { DBStorage } from "../../../db";
-import { ControllableAgent } from "~/server/agent-control-service/agent";
-
-type UpdatePayload = DBStorage.Agent.Model;
+import { Validation } from "~/server/utils/validation";
 
 export default defineEventHandler(async (event) => {
 
@@ -15,35 +12,27 @@ export default defineEventHandler(async (event) => {
         return { status: "ERROR", message: "Invalid Agent ID" };
     }
 
-    const payload = await readBody(event) as UpdatePayload | undefined;
-    if (
-        !payload ||
-        typeof payload.name !== "string" ||
-        typeof payload.description !== "string" ||
-        !["server", "microcontroller"].includes(payload.type) ||
-        typeof payload.secret !== "string"
-    ) {
+    // The secret can't be set here; use POST /api/agents/:id/regenerate-secret.
+    const input = Validation.parseAgentInput(await readBody(event));
+    if (!input) {
         setResponseStatus(event, 400);
         return { status: "ERROR", message: "Invalid payload" };
     }
 
-    payload.ownerID = userinfo.userID;
-    payload.id = agentID;
+    const result = await DBStorage.Agents.updateDetailsByOwner({
+        ...input,
+        id: agentID,
+        ownerID: userinfo.userID,
+    });
 
-    const result = await DBStorage.Agents.updateByOwner(payload);
-    if (!result) {
+    if (result === null) {
         setResponseStatus(event, 500);
         return { status: "ERROR", message: "Failed to update Agent" };
     }
 
-    const controllableAgent = AgentControlService.agents.get(agentID) as ControllableAgent;
-    if (controllableAgent) {
-        if (controllableAgent.secret !== payload.secret) {
-            controllableAgent.secret = payload.secret;
-
-            // If the secret has changed, we need to close the connection
-            await controllableAgent.closeConnection();
-        }
+    if (!result) {
+        setResponseStatus(event, 404);
+        return { status: "ERROR", message: "Agent not found or inaccessible by user" };
     }
 
     setResponseStatus(event, 201);

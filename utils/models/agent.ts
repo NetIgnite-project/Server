@@ -52,7 +52,6 @@ export class Agent implements Agent.Data {
     public name: string;
     public type: Agent.Type;
     public description: string;
-    public secret: string;
     public ownerID: number;
     public status: ModelUtils.OnlineStatus.Type
 
@@ -61,7 +60,6 @@ export class Agent implements Agent.Data {
         this.name = data.name;
         this.type = data.type;
         this.description = data.description;
-        this.secret = data.secret;
         this.ownerID = data.ownerID;
         this.status = data.status;
     }
@@ -103,7 +101,6 @@ export namespace Agent {
         name: string;
         type: Agent.Type;
         description: string;
-        secret: string;
         ownerID: number;
         status: ModelUtils.OnlineStatus.Type;
     }

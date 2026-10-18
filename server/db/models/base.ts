@@ -62,7 +62,7 @@ export abstract class AbstractIDBasedTable<T extends Record<string, any>, TStore
 
     async deleteByID(id: number) {
         try {
-            const stmt = this.db.execute({
+            await this.db.execute({
                 sql: `DELETE FROM ${this.tableName} WHERE id = ?`,
                 args: [id]
             });

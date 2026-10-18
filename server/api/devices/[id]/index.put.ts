@@ -1,6 +1,5 @@
 import { DBStorage } from "../../../db";
-
-type UpdatePayload = DBStorage.Device.Model;
+import { Validation } from "~/server/utils/validation";
 
 export default defineEventHandler(async (event) => {
 
@@ -13,28 +12,26 @@ export default defineEventHandler(async (event) => {
         return { status: "ERROR", message: "Invalid Device ID" };
     }
 
-    const payload = await readBody(event) as UpdatePayload | undefined;
-    if (
-        !payload ||
-        typeof payload.name !== "string" ||
-        typeof payload.macAddress !== "string" ||
-        typeof payload.port !== "number" || payload.port < 0 || payload.port > 65535 ||
-        typeof payload.agentID !== "number"
-    ) {
+    const input = Validation.parseDeviceInput(await readBody(event));
+    if (!input) {
         setResponseStatus(event, 400);
         return { status: "ERROR", message: "Invalid payload" };
     }
 
-    payload.ownerID = userinfo.userID;
-    payload.id = deviceID;
+    const device = await DBStorage.Devices.getByIDAndOwnerID(deviceID, userinfo.userID);
+    if (!device) {
+        setResponseStatus(event, 404);
+        return { status: "ERROR", message: "Device not found or inaccessible by user" };
+    }
 
-    const agentIDExists = await DBStorage.Agents.getByID(payload.agentID);
-    if (!agentIDExists) {
+    // Devices can only be bound to the user's own agents.
+    const agent = await DBStorage.Agents.getByIDAndOwnerID(input.agentID, userinfo.userID);
+    if (!agent) {
         setResponseStatus(event, 400);
         return { status: "ERROR", message: "No matching agent found for the given AgentID", data: null };
     }
 
-    const result = await DBStorage.Devices.updateByOwner(payload);
+    const result = await DBStorage.Devices.updateByOwner({ ...input, id: deviceID, ownerID: userinfo.userID });
     if (!result) {
         setResponseStatus(event, 500);
         return { status: "ERROR", message: "Failed to update Device" };

@@ -44,6 +44,11 @@ export class DBStorage {
                 await this.db.execute(table.createTable());
             }
 
+            const migratedSecrets = await this.Agents.hashPlaintextSecrets();
+            if (migratedSecrets > 0) {
+                console.log(`Hashed ${migratedSecrets} agent secret(s) stored in plaintext.`);
+            }
+
             console.log("Database tables initialized successfully.");
 
         } catch (error) {

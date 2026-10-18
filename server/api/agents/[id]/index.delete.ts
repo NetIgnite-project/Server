@@ -26,6 +26,8 @@ export default defineEventHandler(async (event) => {
         return { status: "ERROR", message: "Failed to delete Agent" };
     }
 
+    // Disconnect the deleted agent; otherwise its socket stays open and keeps receiving heartbeats.
+    await AgentControlService.agents.get(agentID)?.closeConnection();
     AgentControlService.agents.delete(agentID);
 
     setResponseStatus(event, 200);

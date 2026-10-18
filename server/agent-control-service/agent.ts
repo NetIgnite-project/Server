@@ -2,6 +2,7 @@ import { EncodingUtils } from "@/shared/encoding";
 import { AgentCMDRegistry } from "./commands/registry";
 import { AgentCommand } from "./commands/message";
 import { AgentControlService } from ".";
+import { AgentSecrets } from "../utils/auth/agentSecrets";
 
 export type AgentID = number;
 export type AgentsDB = Map<AgentID, ControllableAgent>;
@@ -19,24 +20,33 @@ type ControllableOnlineAgent = ControllableAgent & {
     socket: Socket;
 }
 
+const COMMAND_RESPONSE_TIMEOUT_MS = 5000;
+
 
 export class ControllableAgent implements ControllableAgent.IConfig {
 
     public peerID: string | null = null;
     public socket: Socket | null = null;
-    
-    public onMessage: ((data: string) => void) | null = null;
+
+    /** Commands waiting for a response, by command ID. Several commands can be in flight at once. */
+    private readonly pendingResponses = new Map<number, (payload: any) => void>();
 
     constructor(
         readonly id: number,
-        public secret: string,
+        readonly ownerID: number,
+        public secretHash: string,
     ) { }
 
     static fromConfig(config: ControllableAgent.IConfig) {
         return new ControllableAgent(
             config.id,
-            config.secret
+            config.ownerID,
+            config.secretHash
         );
+    }
+
+    public verifySecret(secret: string) {
+        return AgentSecrets.verify(secret, this.secretHash);
     }
 
     public isOnline(): this is ControllableOnlineAgent {
@@ -52,32 +62,39 @@ export class ControllableAgent implements ControllableAgent.IConfig {
         }
 
         const cmd = AgentCommand.create(command as any, payload as any);
-        const response_id = cmd.id;
+        const responseID = cmd.id;
 
-        this.socket.send(cmd.encode());
+        if (!withResponse) {
+            this.socket.send(cmd.encode());
+            return;
+        }
 
-        if (!withResponse) return;
-
-        return new Promise<AgentCMDRegistry.Response<C> | null>((resolve) => {
-
-            this.onMessage = (data) => {
-
-                const decoded = AgentCommand.fromDecoded(data);
-                if (decoded && decoded.id === response_id) {
-                    clearTimeout(timeout);
-                    this.onMessage = null;
-                    resolve(decoded.payload);
-                }
-            };
+        const response = new Promise<AgentCMDRegistry.Response<C> | null>((resolve) => {
 
             const timeout = setTimeout(() => {
-                this.onMessage = null;
+                this.pendingResponses.delete(responseID);
                 resolve(null);
-            }, 5000);
+            }, COMMAND_RESPONSE_TIMEOUT_MS);
+
+            this.pendingResponses.set(responseID, (responsePayload) => {
+                clearTimeout(timeout);
+                this.pendingResponses.delete(responseID);
+                resolve(responsePayload);
+            });
 
         });
 
+        this.socket.send(cmd.encode());
 
+        return response;
+    }
+
+    /** Resolves the pending command that a message from the agent answers. */
+    public handleMessage(data: string) {
+        const decoded = AgentCommand.fromDecoded(data);
+        if (!decoded) return;
+
+        this.pendingResponses.get(decoded.id)?.(decoded.payload);
     }
 
     async sendHeartbeat() {
@@ -87,15 +104,24 @@ export class ControllableAgent implements ControllableAgent.IConfig {
         }
     }
 
+    /** Forgets the connection and fails all commands still waiting for a response. */
+    public detachConnection() {
+        this.peerID = null;
+        this.socket = null;
+
+        for (const resolve of this.pendingResponses.values()) {
+            resolve(null);
+        }
+    }
+
     async closeConnection() {
         if (this.isOnline()) {
             const clients = await AgentControlService.getClients();
-            clients.delete(this.peerID as string);
-            this.socket.close();
+            clients.delete(this.peerID);
+            const socket = this.socket;
 
-            (this.peerID as any) = null;
-            (this.socket as any) = null;
-            (this.onMessage as any) = null;
+            this.detachConnection();
+            socket.close();
         }
     }
 
@@ -104,8 +130,8 @@ export class ControllableAgent implements ControllableAgent.IConfig {
 export namespace ControllableAgent {
     export interface IConfig {
         id: AgentID;
-        // name: string;
-        secret: string;
+        ownerID: number;
+        secretHash: string;
     }
 }
 

@@ -19,8 +19,9 @@ export default defineEventHandler(async (event) => {
         return { status: "ERROR", message: "Device not found or inaccessible by user" };
     }
 
+    // Devices created before agent ownership was enforced may point at another user's agent.
     const agent = AgentControlService.agents.get(device.agentID);
-    if (!agent) {
+    if (!agent || agent.ownerID !== userinfo.userID) {
         setResponseStatus(event, 404);
         return { status: "ERROR", message: "Agent not found" };
     }

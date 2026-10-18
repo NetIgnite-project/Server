@@ -13,6 +13,6 @@ export default defineEventHandler(async (event) => {
         setResponseStatus(event, 500);
         return { status: "ERROR", message: "Failed to retrieve agents.", data: null };
     }
-    
-    return { status: "OK", message: "Agents retrieved successfully.", data: result };
+
+    return { status: "OK", message: "Agents retrieved successfully.", data: result.map(DBStorage.Agent.toPublic) };
 });

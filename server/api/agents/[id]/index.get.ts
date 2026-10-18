@@ -19,5 +19,5 @@ export default defineEventHandler(async (event) => {
     }
 
     setResponseStatus(event, 200);
-    return { status: "OK", message: "Agent retrieved successfully", data: agent };
+    return { status: "OK", message: "Agent retrieved successfully", data: DBStorage.Agent.toPublic(agent) };
 });

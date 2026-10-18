@@ -25,6 +25,10 @@ const isNewAgent = agent_id === "new";
 
 const initialNotification = ref<NotificationToastSettings | null>(null);
 
+// The server returns an agent's secret only when it is created or regenerated. After creating an
+// agent, the secret is handed over to the agent's page through this state and shown once.
+const newAgentSecret = useState<{ id: number; secret: string } | null>('new-agent-secret', () => null);
+
 async function getAgent() {
 
     if (isNewAgent) {
@@ -33,7 +37,6 @@ async function getAgent() {
             name: "",
             description: "",
             type: "" as any,
-            secret: crypto.randomUUID().replace(/-/g, '').substring(0, 16),
             ownerID: SessionStore.useUserInfo().userID,
             status: 'unknown',
         });
@@ -42,7 +45,7 @@ async function getAgent() {
     const response = await useAPI(`/api/agents/${agent_id}` as `/api/agents/:id`, {
         method: 'GET'
     });
-        
+
     if (response.status !== "OK" || !response.data) {
         initialNotification.value = {
             message: `Error fetching agent: ${response?.message || 'unknown error'}`,
@@ -58,6 +61,21 @@ async function getAgent() {
 
 const agent = reactive(await getAgent());
 
+const revealedSecret = ref<string | null>(
+    newAgentSecret.value && newAgentSecret.value.id === agent.id ? newAgentSecret.value.secret : null
+);
+newAgentSecret.value = null;
+
+const isRegenerating = ref(false);
+
+function getAgentInput() {
+    return {
+        name: agent.name,
+        type: agent.type,
+        description: agent.description,
+    };
+}
+
 async function sumbitForm() {
 
     try {
@@ -65,7 +83,7 @@ async function sumbitForm() {
         if (isNewAgent) {
             const response = await useAPI('/api/agents', {
                 method: 'POST',
-                body: JSON.stringify(agent)
+                body: JSON.stringify(getAgentInput())
             });
 
             if (response.status !== "OK" || !response.data) {
@@ -76,16 +94,17 @@ async function sumbitForm() {
                 return;
             }
             useNotificationToast({
-                message: 'Agent created successfully',  
+                message: 'Agent created successfully',
                 type: 'success'
             });
-            navigateTo(`/agents/${response.data}`, { replace: true });
+            newAgentSecret.value = response.data;
+            navigateTo(`/agents/${response.data.id}`, { replace: true });
 
         } else {
 
             const response = await useAPI(`/api/agents/${agent.id}`, {
                 method: 'PUT',
-                body: JSON.stringify(agent)
+                body: JSON.stringify(getAgentInput())
             });
 
             if (response.status !== "OK") {
@@ -111,8 +130,48 @@ async function sumbitForm() {
 
 }
 
+async function regenerateSecret() {
+
+    if (!confirm('Generate a new secret? The agent is disconnected and can only reconnect once it is configured with the new secret.')) {
+        return;
+    }
+
+    isRegenerating.value = true;
+    try {
+        const response = await useAPI(`/api/agents/${agent.id}/regenerate-secret` as `/api/agents/:id/regenerate-secret`, {
+            method: 'POST'
+        });
+
+        if (response.status !== "OK" || !response.data) {
+            useNotificationToast({
+                message: `Error regenerating secret: ${response?.message || 'unknown error'}`,
+                type: 'error'
+            });
+            return;
+        }
+
+        revealedSecret.value = response.data.secret;
+        useNotificationToast({
+            message: 'New secret generated. Copy it now, it is only shown once.',
+            type: 'success'
+        });
+    } finally {
+        isRegenerating.value = false;
+    }
+}
+
+async function copySecret() {
+    if (!revealedSecret.value) return;
+    try {
+        await navigator.clipboard.writeText(revealedSecret.value);
+        useNotificationToast({ message: 'Secret copied to clipboard', type: 'success' });
+    } catch {
+        useNotificationToast({ message: 'Could not copy the secret. Reveal it and copy it manually.', type: 'error' });
+    }
+}
+
 const isSubmitDisabled = computed(() => {
-    return !agent.name || !agent.type || !agent.secret;
+    return !agent.name || !agent.type;
 });
 
 onMounted(() => {
@@ -157,9 +216,9 @@ onMounted(() => {
                     </FormGroup>
                 </div>
 
-                <div v-if="isNewAgent" class="d-flex justify-content-end mt-4">
+                <div class="d-flex justify-content-end mt-4">
                     <FormSubmitBtn class="btn btn-primary text-right" type="submit" :disabled="isSubmitDisabled">
-                        Create Agent
+                        {{ isNewAgent ? 'Create Agent' : 'Update Agent' }}
                     </FormSubmitBtn>
                 </div>
 
@@ -169,21 +228,39 @@ onMounted(() => {
 
                 <h4 class="text-white mb-4">Connection Details</h4>
 
-                <div class="row mb-4">
+                <div class="row mb-2">
                     <FormGroup class="col-md-6">
                         <FormLabel>Connection ID</FormLabel>
                         <FormInput v-model="agent.id" disabled />
                     </FormGroup>
                     <FormGroup class="col-md-6">
                         <FormLabel>Connection Secret</FormLabel>
-                        <FormPWInput v-model="agent.secret" autocomplete="" required />
+                        <template v-if="revealedSecret">
+                            <FormPWInput v-model="revealedSecret" readonly />
+                            <FormDescription>
+                                Configure your agent with this secret now. For security reasons it is only
+                                stored as a hash and can't be shown again.
+                            </FormDescription>
+                        </template>
+                        <template v-else>
+                            <FormInput model-value="Hidden" disabled />
+                            <FormDescription>
+                                The secret is only shown once, when the agent is created. If you lost it,
+                                generate a new one.
+                            </FormDescription>
+                        </template>
                     </FormGroup>
                 </div>
 
-                <div class="d-flex justify-content-end">
-                    <FormSubmitBtn class="btn btn-primary text-right" type="submit" :disabled="isSubmitDisabled">
-                        Update Agent
-                    </FormSubmitBtn>
+                <div class="d-flex justify-content-end gap-2">
+                    <button v-if="revealedSecret" type="button" class="btn btn-secondary" @click="copySecret">
+                        <i class="bi bi-clipboard me-1"></i>
+                        Copy Secret
+                    </button>
+                    <button type="button" class="btn btn-warning" :disabled="isRegenerating" @click="regenerateSecret">
+                        <i class="bi bi-arrow-repeat me-1"></i>
+                        Regenerate Secret
+                    </button>
                 </div>
 
             </div>

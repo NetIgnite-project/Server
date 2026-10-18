@@ -14,7 +14,12 @@ class ControlServiceServerUtils {
             if (type !== "Basic" || !credentials) return null;
 
             const decoded = Buffer.from(credentials, "base64").toString("utf8");
-            const [raw_id, secret] = decoded.split(":");
+
+            // Split at the first colon only: secrets from older versions may contain colons.
+            const separator = decoded.indexOf(":");
+            if (separator === -1) return null;
+            const raw_id = decoded.slice(0, separator);
+            const secret = decoded.slice(separator + 1);
 
             if (!raw_id || !secret) return null;
             const id = parseInt(raw_id, 10);
@@ -34,7 +39,7 @@ class ControlServiceServerUtils {
         const agent = agents.get(credentials.id);
         if (!agent) return null;
 
-        if (agent.secret !== credentials.secret) return null;
+        if (!agent.verifySecret(credentials.secret)) return null;
 
         return agent;
 
@@ -64,10 +69,7 @@ function ControlServiceServerHandlerFactory(clients: Map<string, ControllableAge
         },
 
         message(peer, message) {
-            const agent = clients.get(peer.id);
-            if (agent?.onMessage) {
-                agent.onMessage(message.text());
-            }
+            clients.get(peer.id)?.handleMessage(message.text());
         },
 
         error(peer, error) {
@@ -78,10 +80,11 @@ function ControlServiceServerHandlerFactory(clients: Map<string, ControllableAge
         close(peer, { code, reason }) {
             const agent = clients.get(peer.id);
             if (agent) {
-                agent.peerID = null;
-                agent.socket = null;
-                agent.onMessage = null;
                 clients.delete(peer.id);
+                // A late close of a replaced connection must not detach the agent's new one.
+                if (agent.peerID === peer.id) {
+                    agent.detachConnection();
+                }
                 Logger.log(`Agent '${agent.id}' disconnected with code ${code} and reason: ${reason}`);
             }
         }

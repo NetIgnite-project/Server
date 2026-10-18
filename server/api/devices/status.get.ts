@@ -27,7 +27,7 @@ export default defineEventHandler(async (event) => {
         }
 
         const agent = AgentControlService.agents.get(device.agentID);
-        if (!agent) {
+        if (!agent || agent.ownerID !== userinfo.userID) {
             result[device.id.toString()] = "unknown";
             continue;
         }
