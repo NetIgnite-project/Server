@@ -1,71 +1,72 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
-    compatibilityDate: '2024-11-01',
-    devtools: { enabled: true },
+	compatibilityDate: "2026-09-01",
+	devtools: { enabled: true },
+	modules: ["@nuxt/ui"],
 
-    routeRules: {
-        '/dashboard': { redirect: '/' }
-    },
+	colorMode: {
+		preference: "dark",
+		fallback: "dark",
+		classSuffix: "",
+	},
 
-    ssr: true,
+	ssr: true,
 
-    app: {
-        head: {
-            charset: "utf-8",
-            viewport: "width=device-width, initial-scale=1, maximum-scale=1",
-            link: [
-                {
-                    rel: 'stylesheet',
-                    href: 'https://cdn.jsdelivr.net/npm/bootstrap@5.3.6/dist/css/bootstrap.min.css'
-                },
-                { rel: 'stylesheet', href: 'https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css' },
-                { rel: "preconnect", href: "https://fonts.googleapis.com" },
-                { rel: "preconnect", href: "https://fonts.gstatic.com", crossorigin: "" },
-                { rel: "stylesheet", href: "https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;600;700;800;900&display=swap" },
+	css: ["~/assets/css/main.css"],
 
-                { rel: 'icon', type: 'image/x-icon', href: '/favicon.ico' }
-            ],
-            script: [
-                {
-                    src: 'https://cdn.jsdelivr.net/npm/bootstrap@5.3.6/dist/js/bootstrap.bundle.min.js',
-                    tagPosition: 'bodyClose'
-                }
-            ]
+	nitro: {
+		// Agent gateway (server/routes/ws/agent.ts); needs the Bun preset.
+		experimental: {
+			websocket: true,
+		},
 
-        }
-    },
+		rollupConfig: {
+			external: ["bun:sqlite"],
 
-    css: [
-        '/assets/css/global.css',
-    ],
+			output: {
+				banner: (function () {
+					const mappings = {
+						NETIGNITE_APP_URL: "APP_URL",
+					};
 
-    // build: {
-    //     transpile: ['@libsql/hrana-client', '@libsql/isomorphic-ws']
-    // },
+					const bannerCode = `
+						(function () {
+							const mappings = ${JSON.stringify(mappings)};
+							const env = globalThis.process?.env ?? {};
+							for (const [envName, runtimeName] of Object.entries(mappings)) {
+								if (!env['NUXT_PUBLIC_' + runtimeName] && env[envName]) {
+									env['NUXT_PUBLIC_' + runtimeName] = env[envName];
+								}
+							}
+						})();
+					`;
 
-    nitro: {
-        preset: 'bun',
-        experimental: {
-            websocket: true
-        }
-    },
+					return bannerCode.replace(/^\s+|\s+$/g, "").replace(/\n\s*/g, " ");
+				})(),
+			},
+		},
 
-    modules: ['@vite-pwa/nuxt'],
+		esbuild: {
+			options: {
+				target: "esnext",
+			},
+		},
+	},
 
-    pwa: {
-        registerType: 'autoUpdate',
-        manifest: {
-            name: 'NetIgnite',
-            short_name: 'NetIgnite',
-            start_url: '/',
-            description: 'NetIgnite - Power On Devices From Anywhere',
+	runtimeConfig: {
+		public: {
+			//@ts-ignore
+			appUrl: process.env.NETIGNITE_APP_URL || "http://localhost:18232",
+		},
+	},
 
-            display: 'standalone',
-            orientation: 'portrait',
+	routeRules: {
+		// The public website is netignite.dev; the app starts at the dashboard.
+		"/": { redirect: "/dashboard" },
+		"/dashboard/**": { ssr: false },
+		"/auth/**": { ssr: false },
+		"/**": { ssr: true },
+	},
 
-            theme_color: '#ffffff',
-            background_color: '#0b0c1b',
-        }
-    }
-
+	telemetry: false,
 });

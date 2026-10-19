@@ -1,22 +1,18 @@
 {
-  // https://nuxt.com/docs/guide/concepts/typescript
-  "extends": "./.nuxt/tsconfig.json",
-
-  "compilerOptions": {
-
-    "target": "ESNext",
-    "types": ["bun-types"],
-
-    // Best practices
-    "strict": true,
-    "skipLibCheck": true,
-    "noFallthroughCasesInSwitch": true,
-    "noUncheckedIndexedAccess": true,
-
-    // Some stricter flags (disabled by default)
-    "noUnusedLocals": false,
-    "noUnusedParameters": false,
-    "noPropertyAccessFromIndexSignature": false
-  }
-
+	// https://nuxt.com/docs/guide/concepts/typescript
+	"files": [],
+	"references": [
+		{
+			"path": "./.nuxt/tsconfig.app.json"
+		},
+		{
+			"path": "./.nuxt/tsconfig.server.json"
+		},
+		{
+			"path": "./.nuxt/tsconfig.shared.json"
+		},
+		{
+			"path": "./.nuxt/tsconfig.node.json"
+		}
+	]
 }

@@ -50,8 +50,8 @@ jobs:
         shell: bash
         run: bun install
       
-      #- name: Build Nuxt application
-      #  run: bun run build
+      - name: Build Nuxt application
+        run: bun run build
       
       - name: Setup Docker
         id: docker-setup

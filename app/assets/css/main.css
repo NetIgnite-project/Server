@@ -1,0 +1,55 @@
+/*
+ * main.css — Tailwind v4 CSS-first entry (no tailwind.config.js). Dark-only.
+ * Colors match the NetIgnite website (netignite.dev): brand blue #0087ff on navy surfaces.
+ * See docs/06-frontend-nuxt.md and docs/15-design-system.md.
+ */
+@import "tailwindcss";
+@import "@nuxt/ui";
+
+@theme static {
+	--font-sans: "Rubik", sans-serif;
+
+	/* NetIgnite brand blue — 500 is the logo/brand color #0087ff. Used as `primary`. */
+	--color-netignite-50: #edf7ff;
+	--color-netignite-100: #d6ecff;
+	--color-netignite-200: #b5dfff;
+	--color-netignite-300: #83cbff;
+	--color-netignite-400: #48adff;
+	--color-netignite-500: #0087ff;
+	--color-netignite-600: #006be0;
+	--color-netignite-700: #0055b8;
+	--color-netignite-800: #064894;
+	--color-netignite-900: #0b3d79;
+	--color-netignite-950: #08264d;
+
+	/* NetIgnite surfaces: page background, raised sections/cards, and their hover state. */
+	--color-night: #0b0c1b;
+	--color-surface: #1a1b2e;
+	--color-surface-hover: #22233a;
+}
+
+/* ===========================
+   Base & Reset Styles
+   =========================== */
+
+:root {
+	color-scheme: dark;
+}
+
+/* Brand blue as the dark-mode primary (Nuxt UI defaults to the 400 shade) and the navy
+   surfaces as Nuxt UI's backgrounds, so slide-overs, menus and the TOC match the site. */
+.dark {
+	--ui-primary: var(--ui-color-primary-500);
+	--ui-bg: var(--color-night);
+	--ui-bg-muted: var(--color-surface);
+	--ui-bg-elevated: var(--color-surface);
+	--ui-bg-accented: var(--color-surface-hover);
+}
+
+html {
+	scroll-behavior: smooth;
+}
+
+.main-bg-color {
+	background-color: var(--color-night);
+}
