@@ -38,6 +38,22 @@ jobs:
       id-token: write
     
     steps:
+      # A stable image moves `latest`, which self-hosted servers pull: only main may publish one.
+      - name: Check version
+        env:
+          VERSION: ${{ inputs.version }}
+          PRE_RELEASE: ${{ inputs.pre_release }}
+          REF: ${{ github.ref }}
+        run: |
+          if ! [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-(alpha|beta|rc|pre)\.[0-9]+)?$ ]]; then
+            echo "::error::Invalid version '$VERSION'. Use x.y.z or x.y.z-beta.n."
+            exit 1
+          fi
+          if [[ "$PRE_RELEASE" != "true" && "$REF" != "refs/heads/main" ]]; then
+            echo "::error::Only main can publish a stable image (tag 'latest'). Publish from $REF as a pre-release."
+            exit 1
+          fi
+
       - name: Checkout repository
         uses: actions/checkout@v4
 
@@ -48,7 +64,7 @@ jobs:
 
       - name: Install dependencies
         shell: bash
-        run: bun install
+        run: bun install --frozen-lockfile
       
       - name: Build Nuxt application
         run: bun run build
