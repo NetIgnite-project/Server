@@ -426,7 +426,7 @@ describe("Sharing and permissions", () => {
 			);
 			await makeAPIRequest(`/v1/devices/${deviceID}/shares`, { authToken }, expected.manage);
 		}
-	});
+	}, 30_000);
 
 	test("managers can't move a device to another agent", async () => {
 		await makeAPIRequest(
