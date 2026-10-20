@@ -9,6 +9,7 @@ import { router as adminRouter } from "./routes/admin";
 import { router as agentsRouter } from "./routes/agents";
 import { router as authRouter } from "./routes/auth";
 import { router as devicesRouter } from "./routes/devices";
+import { router as firmwareRouter } from "./routes/firmware";
 
 const openAPIConfig: Partial<GenerateSpecOptions> = {
 	documentation: {
@@ -62,11 +63,11 @@ const openAPIConfig: Partial<GenerateSpecOptions> = {
 			},
 			{
 				name: "Agents & Devices",
-				tags: [DOCS_TAGS.AGENTS, DOCS_TAGS.DEVICES, DOCS_TAGS.DEVICE_SHARES],
+				tags: [DOCS_TAGS.AGENTS, DOCS_TAGS.DEVICES, DOCS_TAGS.DEVICE_SHARES, DOCS_TAGS.FIRMWARE],
 			},
 			{
 				name: DOCS_TAGS.ADMIN_API.BASE,
-				tags: [DOCS_TAGS.ADMIN_API.USERS, DOCS_TAGS.ADMIN_API.SETTINGS],
+				tags: [DOCS_TAGS.ADMIN_API.USERS, DOCS_TAGS.ADMIN_API.SETTINGS, DOCS_TAGS.ADMIN_API.FIRMWARE],
 			},
 		],
 
@@ -114,6 +115,10 @@ const openAPIConfig: Partial<GenerateSpecOptions> = {
 				parent: DOCS_TAGS.DEVICES,
 				description: "Share devices with other users as viewer, operator or manager",
 			},
+			{
+				name: DOCS_TAGS.FIRMWARE,
+				description: "ESP32 firmware releases for the web installer and OTA updates",
+			},
 
 			{
 				name: DOCS_TAGS.ADMIN_API.SETTINGS,
@@ -122,6 +127,14 @@ const openAPIConfig: Partial<GenerateSpecOptions> = {
 				summary: "Settings",
 				parent: DOCS_TAGS.ADMIN_API.BASE,
 				description: "Server-wide settings such as public registration",
+			},
+			{
+				name: DOCS_TAGS.ADMIN_API.FIRMWARE,
+				// @ts-ignore
+				"x-displayName": "Firmware",
+				summary: "Firmware",
+				parent: DOCS_TAGS.ADMIN_API.BASE,
+				description: "Firmware release sync from GitHub",
 			},
 			{
 				name: DOCS_TAGS.ADMIN_API.USERS,
@@ -144,6 +157,7 @@ router.route("/", accountRouter);
 router.route("/", adminRouter);
 router.route("/", agentsRouter);
 router.route("/", devicesRouter);
+router.route("/", firmwareRouter);
 
 export class APIv1Router extends APIVersionRouter {
 	constructor() {

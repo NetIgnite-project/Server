@@ -3,6 +3,7 @@ import { validator } from "hono-openapi";
 import z from "zod";
 import { APIResponse } from "../../../../../utils/api-res";
 import { RuntimeMetadata } from "../../../../../utils/metadata";
+import { FirmwareSettings } from "../../../../../utils/shared-models/netigniteData";
 import { APIResponseSpec, APIRouteSpec } from "../../../../../utils/specHelpers";
 import { DOCS_TAGS } from "../../../docs";
 
@@ -10,6 +11,8 @@ export const router = new Hono().basePath("/settings");
 
 const Settings = z.object({
 	registration_enabled: z.boolean(),
+	/** Firmware releases the installer and OTA updates offer by default. */
+	firmware_channel: FirmwareSettings.Channel,
 });
 
 router.get(

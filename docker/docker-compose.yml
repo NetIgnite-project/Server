@@ -16,6 +16,10 @@ services:
 
       NETIGNITE_APP_URL: http://localhost:18232
 
+      # ESP32 firmware for the web installer is synced from GitHub releases. Optional:
+      # NETIGNITE_FIRMWARE_SYNC: false
+      # NETIGNITE_FIRMWARE_PUBLIC_KEY: /opt/netignite/config/firmware-signing.pub.pem
+
       NETIGNITE_SMTP_HOST: "mail.example.com"
       NETIGNITE_SMTP_PORT: 465
       NETIGNITE_SMTP_USERNAME: "YourSMTPUsernameHere"

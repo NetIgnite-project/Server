@@ -1,0 +1,5 @@
+key,type,encoding,value
+netignite,namespace,,
+server,data,string,https://app.netignite.dev
+enroll,data,string,netignite_enroll_k3Jd9sQ2aB7xYz1P:Zm9vYmFyYmF6cXV4cXV1eGNvcmdlZ3JhdWx0Z2FycGx5d2FsZG9
+name,data,string,Kitchen ESP

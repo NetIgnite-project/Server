@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { AgentSettings } from "../../../../utils/shared-models/netigniteData";
+import { AgentSettings, FirmwareSettings } from "../../../../utils/shared-models/netigniteData";
 
 export namespace AgentsModel {
 	export const Name = z.string().trim().min(1, "Name is required").max(64, "Name is too long");
@@ -60,6 +60,34 @@ export namespace AgentsModel.Enroll {
 		kind: AgentSettings.Kind,
 		/** The agent connects with `Authorization: Bearer netignite_agent_<token_id>:<secret>`. */
 		token_id: z.string(),
+	});
+	export type Response = z.infer<typeof Response>;
+}
+
+export namespace AgentsModel.FlashImage {
+	export const Body = z.object({
+		/** Firmware release the image is for (its NVS layout). */
+		version: FirmwareSettings.Version,
+		/** URL the agent connects to. Defaults to the server's public URL (NETIGNITE_APP_URL). */
+		server_url: z
+			.url({ protocol: /^https?$/, error: "Must be an http:// or https:// URL" })
+			.max(200)
+			.refine((url) => {
+				const parsed = new URL(url);
+				return !parsed.username && !parsed.password && !parsed.search && !parsed.hash;
+			}, "The URL can't contain credentials, a query or a fragment")
+			.optional(),
+	});
+	export type Body = z.infer<typeof Body>;
+
+	export const Response = z.object({
+		/** NVS partition image (base64) with the server URL, the agent's name and a single-use enrollment token. */
+		image: z.string(),
+		/** Flash offset of the image. */
+		offset: z.number(),
+		server_url: z.string(),
+		/** The enrollment token in the image expires at this time; flash before. */
+		expires_at: z.number(),
 	});
 	export type Response = z.infer<typeof Response>;
 }

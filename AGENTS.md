@@ -50,5 +50,18 @@ Follow the LeiCraftMC Style Guides: https://github.com/LeiCraftMC/Style-Guides.
   on it.
 - `scripts/import-v1.ts` imports a NetIgnite v1 database (bundled into `.output/import-v1.mjs` by
   `bun run build`).
-- Tests: `tests/netignite.test.ts` (API + gateway with `tests/helpers/fake-agent.ts`) and
-  `tests/v1-import.test.ts`.
+- **Firmware** (`server/lib/firmware/`): `FirmwareCatalog` syncs Agent-ESP32 GitHub releases
+  (`release.json` + flash images, SHA-256 and optional ECDSA signature checks) into
+  `NETIGNITE_FIRMWARE_DIR`; no uploads. `NVSImage` writes ESP-IDF NVS v2 images byte-identical to
+  Espressif's `nvs_partition_gen.py` (fixtures in `tests/fixtures/nvs/`); `ProvisioningImage` only
+  writes the keys a release lists in `release.json` → `nvs.keys`. The firmware reads these NVS
+  keys, so change them together with Agent-ESP32's `src/Config.h`.
+- **Web installer** (`app/pages/dashboard/agents/[agent_id]/install.vue`): imports ESP Web Tools'
+  prebuilt bundle `esp-web-tools/dist/web/install-button.js`; the package's ES modules need an
+  older `@material/web` than npm resolves. All manifest parts are `blob:` URLs, so the enrollment
+  token never appears in a URL.
+- Run Biome's autofix only on the files you changed: on the whole tree it rewrites `@ts-ignore` to
+  `@ts-expect-error`, which breaks `nuxt typecheck`.
+- Tests: `tests/netignite.test.ts` (API + gateway with `tests/helpers/fake-agent.ts`),
+  `tests/v1-import.test.ts`, `tests/firmware.test.ts` (catalog against a fake GitHub, flash image)
+  and `tests/nvs.test.ts`.

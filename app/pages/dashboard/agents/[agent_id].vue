@@ -52,9 +52,10 @@ if (isNew) {
 }
 
 function getRoutesConfig(): UseSubrouterPathDynamics.RoutesConfig {
+	const base = `/dashboard/agents/${agentParam}`;
 	const name = agent?.value?.name ?? agentParam;
-	return {
-		[`/dashboard/agents/${agentParam}`]: {
+	const routes: UseSubrouterPathDynamics.RoutesConfig = {
+		[base]: {
 			isNavLink: true,
 			label: "General",
 			icon: "i-lucide-radio-tower",
@@ -70,6 +71,22 @@ function getRoutesConfig(): UseSubrouterPathDynamics.RoutesConfig {
 			},
 		},
 	};
+
+	if (!isNew && agent?.value?.kind === "esp32") {
+		routes[`${base}/install`] = {
+			isNavLink: true,
+			label: "Install",
+			icon: "i-lucide-usb",
+			getDynamicValues() {
+				return {
+					seoSettings: { title: `Install · ${name}`, description: `Install the firmware on ${name}` },
+					breadcrumbItems: [{ label: name, to: base }, { label: "Install" }],
+				};
+			},
+		};
+	}
+
+	return routes;
 }
 
 const subrouterPathDynamics = useSubrouterPathDynamics({
@@ -89,6 +106,10 @@ const routePathDynamicValues = await useAwaitedComputed(async () => {
 	<UDashboardPanel>
 		<template #header>
 			<DashboardPageHeader icon="i-lucide-radio-tower" :breadcrumb-items="routePathDynamicValues.breadcrumbItems" />
+
+			<UDashboardToolbar v-if="!isNew && !error && (subrouterPathDynamics.links[0]?.length ?? 0) > 1">
+				<UNavigationMenu :items="subrouterPathDynamics.links" highlight class="-mx-1 flex-1" />
+			</UDashboardToolbar>
 		</template>
 
 		<template #body>

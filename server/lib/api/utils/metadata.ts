@@ -1,6 +1,7 @@
 import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { DB } from "../../db/index";
+import { FirmwareSettings } from "./shared-models/netigniteData";
 
 export class RuntimeMetadata {
 	protected static readonly schemas = {
@@ -9,8 +10,18 @@ export class RuntimeMetadata {
 			.object({
 				/** Lets anyone create an account at /auth/signup. Off by default for self-hosted servers. */
 				registration_enabled: z.boolean().default(false),
+				/** Which ESP32 firmware releases the installer and OTA updates offer by default. */
+				firmware_channel: FirmwareSettings.Channel.default("stable"),
 			})
-			.default({ registration_enabled: false }),
+			.default({ registration_enabled: false, firmware_channel: "stable" }),
+		/** Outcome of the last firmware release sync from GitHub. */
+		firmware_sync: z
+			.object({
+				last_run_at: z.number().nullable().default(null),
+				last_success_at: z.number().nullable().default(null),
+				error: z.string().nullable().default(null),
+			})
+			.default({ last_run_at: null, last_success_at: null, error: null }),
 		/** v1 id → v2 id of everything imported by `import-v1`, so re-running it skips them. */
 		v1_import: z
 			.object({
@@ -31,6 +42,14 @@ export class RuntimeMetadata {
 
 	static getSettings() {
 		return this.getMetadata("settings");
+	}
+
+	static getFirmwareSyncState() {
+		return this.getMetadata("firmware_sync");
+	}
+
+	static setFirmwareSyncState(state: z.infer<(typeof this.schemas)["firmware_sync"]>) {
+		return this.setMetadata("firmware_sync", state);
 	}
 
 	static async updateSettings(update: Partial<z.infer<(typeof this.schemas)["settings"]>>) {

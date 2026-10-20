@@ -4,3 +4,4 @@
 *.png binary
 *.ico binary
 *.woff2 binary
+*.bin binary

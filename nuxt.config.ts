@@ -14,6 +14,13 @@ export default defineNuxtConfig({
 
 	css: ["~/assets/css/main.css"],
 
+	vue: {
+		compilerOptions: {
+			// ESP Web Tools' web component (the ESP32 web installer).
+			isCustomElement: (tag) => tag.startsWith("esp-web-") || tag.startsWith("ewt-"),
+		},
+	},
+
 	nitro: {
 		// Agent gateway (server/routes/ws/agent.ts); needs the Bun preset.
 		experimental: {

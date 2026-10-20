@@ -30,6 +30,9 @@ ENV NETIGNITE_DB_MIGRATION_DIR=/opt/netignite/app/drizzle/migrations
 ENV NETIGNITE_LOG_DIR=/opt/netignite/data/logs
 ENV NETIGNITE_CONFIG_BASE_DIR=/opt/netignite/config
 
+# ESP32 firmware releases downloaded from GitHub for the web installer.
+ENV NETIGNITE_FIRMWARE_DIR=/opt/netignite/data/firmware
+
 
 VOLUME /opt/netignite/data
 VOLUME /opt/netignite/config

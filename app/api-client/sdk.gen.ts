@@ -3,7 +3,7 @@
 
 import type { Client, ClientMeta, Composable, Options as Options2, RequestResult, TDataShape } from './client';
 import { client } from './client.gen';
-import type { DeleteAccountApikeysByApiKeyIdData, DeleteAccountApikeysByApiKeyIdError, DeleteAccountApikeysByApiKeyIdResponse, DeleteAccountData, DeleteAccountError, DeleteAccountResponse, DeleteAdminUsersByUserIdData, DeleteAdminUsersByUserIdError, DeleteAdminUsersByUserIdResponse, DeleteAgentsByAgentIdData, DeleteAgentsByAgentIdError, DeleteAgentsByAgentIdResponse, DeleteDevicesByDeviceIdData, DeleteDevicesByDeviceIdError, DeleteDevicesByDeviceIdFavoriteData, DeleteDevicesByDeviceIdFavoriteError, DeleteDevicesByDeviceIdFavoriteResponse, DeleteDevicesByDeviceIdResponse, DeleteDevicesByDeviceIdSharesByUserIdData, DeleteDevicesByDeviceIdSharesByUserIdError, DeleteDevicesByDeviceIdSharesByUserIdResponse, GetAccountApikeysByApiKeyIdData, GetAccountApikeysByApiKeyIdError, GetAccountApikeysByApiKeyIdResponse, GetAccountApikeysData, GetAccountApikeysResponse, GetAccountData, GetAccountError, GetAccountPreferencesData, GetAccountPreferencesOnboardingData, GetAccountPreferencesOnboardingResponse, GetAccountPreferencesResponse, GetAccountResponse, GetAdminSettingsData, GetAdminSettingsResponse, GetAdminUsersByUserIdData, GetAdminUsersByUserIdError, GetAdminUsersByUserIdResponse, GetAdminUsersData, GetAdminUsersError, GetAdminUsersResponse, GetAgentsByAgentIdData, GetAgentsByAgentIdError, GetAgentsByAgentIdResponse, GetAgentsData, GetAgentsResponse, GetAuthRegistrationData, GetAuthRegistrationResponse, GetAuthSessionData, GetAuthSessionError, GetAuthSessionResponse, GetDevicesByDeviceIdData, GetDevicesByDeviceIdError, GetDevicesByDeviceIdResponse, GetDevicesByDeviceIdSharesData, GetDevicesByDeviceIdSharesError, GetDevicesByDeviceIdSharesResponse, GetDevicesData, GetDevicesResponse, PostAccountApikeysData, PostAccountApikeysError, PostAccountApikeysResponse, PostAdminUsersData, PostAdminUsersError, PostAdminUsersResponse, PostAgentsByAgentIdEnrollmentsData, PostAgentsByAgentIdEnrollmentsError, PostAgentsByAgentIdEnrollmentsResponse, PostAgentsByAgentIdRevokeData, PostAgentsByAgentIdRevokeError, PostAgentsByAgentIdRevokeResponse, PostAgentsData, PostAgentsEnrollData, PostAgentsEnrollError, PostAgentsEnrollResponse, PostAgentsError, PostAgentsResponse, PostAuthLoginData, PostAuthLoginError, PostAuthLoginResponse, PostAuthLogoutData, PostAuthLogoutError, PostAuthLogoutResponse, PostAuthResetPasswordData, PostAuthResetPasswordError, PostAuthResetPasswordRequestData, PostAuthResetPasswordRequestError, PostAuthResetPasswordRequestResponse, PostAuthResetPasswordResponse, PostAuthSignupData, PostAuthSignupError, PostAuthSignupResponse, PostDevicesByDeviceIdPowerOnData, PostDevicesByDeviceIdPowerOnError, PostDevicesByDeviceIdPowerOnResponse, PostDevicesByDeviceIdRebootData, PostDevicesByDeviceIdRebootError, PostDevicesByDeviceIdRebootResponse, PostDevicesByDeviceIdSharesData, PostDevicesByDeviceIdSharesError, PostDevicesByDeviceIdSharesResponse, PostDevicesByDeviceIdShutdownData, PostDevicesByDeviceIdShutdownError, PostDevicesByDeviceIdShutdownResponse, PostDevicesByDeviceIdStatusData, PostDevicesByDeviceIdStatusError, PostDevicesByDeviceIdStatusResponse, PostDevicesData, PostDevicesError, PostDevicesResponse, PutAccountData, PutAccountError, PutAccountPasswordData, PutAccountPasswordError, PutAccountPasswordResponse, PutAccountPreferencesOnboardingData, PutAccountPreferencesOnboardingError, PutAccountPreferencesOnboardingResponse, PutAccountResponse, PutAdminSettingsData, PutAdminSettingsError, PutAdminSettingsResponse, PutAdminUsersByUserIdData, PutAdminUsersByUserIdError, PutAdminUsersByUserIdPasswordData, PutAdminUsersByUserIdPasswordError, PutAdminUsersByUserIdPasswordResponse, PutAdminUsersByUserIdResponse, PutAgentsByAgentIdData, PutAgentsByAgentIdError, PutAgentsByAgentIdResponse, PutDevicesByDeviceIdData, PutDevicesByDeviceIdError, PutDevicesByDeviceIdFavoriteData, PutDevicesByDeviceIdFavoriteError, PutDevicesByDeviceIdFavoriteResponse, PutDevicesByDeviceIdResponse, PutDevicesByDeviceIdSharesByUserIdData, PutDevicesByDeviceIdSharesByUserIdError, PutDevicesByDeviceIdSharesByUserIdResponse } from './types.gen';
+import type { DeleteAccountApikeysByApiKeyIdData, DeleteAccountApikeysByApiKeyIdError, DeleteAccountApikeysByApiKeyIdResponse, DeleteAccountData, DeleteAccountError, DeleteAccountResponse, DeleteAdminUsersByUserIdData, DeleteAdminUsersByUserIdError, DeleteAdminUsersByUserIdResponse, DeleteAgentsByAgentIdData, DeleteAgentsByAgentIdError, DeleteAgentsByAgentIdResponse, DeleteDevicesByDeviceIdData, DeleteDevicesByDeviceIdError, DeleteDevicesByDeviceIdFavoriteData, DeleteDevicesByDeviceIdFavoriteError, DeleteDevicesByDeviceIdFavoriteResponse, DeleteDevicesByDeviceIdResponse, DeleteDevicesByDeviceIdSharesByUserIdData, DeleteDevicesByDeviceIdSharesByUserIdError, DeleteDevicesByDeviceIdSharesByUserIdResponse, GetAccountApikeysByApiKeyIdData, GetAccountApikeysByApiKeyIdError, GetAccountApikeysByApiKeyIdResponse, GetAccountApikeysData, GetAccountApikeysResponse, GetAccountData, GetAccountError, GetAccountPreferencesData, GetAccountPreferencesOnboardingData, GetAccountPreferencesOnboardingResponse, GetAccountPreferencesResponse, GetAccountResponse, GetAdminFirmwareData, GetAdminFirmwareResponse, GetAdminSettingsData, GetAdminSettingsResponse, GetAdminUsersByUserIdData, GetAdminUsersByUserIdError, GetAdminUsersByUserIdResponse, GetAdminUsersData, GetAdminUsersError, GetAdminUsersResponse, GetAgentsByAgentIdData, GetAgentsByAgentIdError, GetAgentsByAgentIdResponse, GetAgentsData, GetAgentsResponse, GetAuthRegistrationData, GetAuthRegistrationResponse, GetAuthSessionData, GetAuthSessionError, GetAuthSessionResponse, GetDevicesByDeviceIdData, GetDevicesByDeviceIdError, GetDevicesByDeviceIdResponse, GetDevicesByDeviceIdSharesData, GetDevicesByDeviceIdSharesError, GetDevicesByDeviceIdSharesResponse, GetDevicesData, GetDevicesResponse, GetFirmwareByVersionFilesByFileData, GetFirmwareByVersionFilesByFileError, GetFirmwareByVersionFilesByFileResponse, GetFirmwareData, GetFirmwareResponse, PostAccountApikeysData, PostAccountApikeysError, PostAccountApikeysResponse, PostAdminFirmwareSyncData, PostAdminFirmwareSyncError, PostAdminFirmwareSyncResponse, PostAdminUsersData, PostAdminUsersError, PostAdminUsersResponse, PostAgentsByAgentIdEnrollmentsData, PostAgentsByAgentIdEnrollmentsError, PostAgentsByAgentIdEnrollmentsResponse, PostAgentsByAgentIdFlashImageData, PostAgentsByAgentIdFlashImageError, PostAgentsByAgentIdFlashImageResponse, PostAgentsByAgentIdRevokeData, PostAgentsByAgentIdRevokeError, PostAgentsByAgentIdRevokeResponse, PostAgentsData, PostAgentsEnrollData, PostAgentsEnrollError, PostAgentsEnrollResponse, PostAgentsError, PostAgentsResponse, PostAuthLoginData, PostAuthLoginError, PostAuthLoginResponse, PostAuthLogoutData, PostAuthLogoutError, PostAuthLogoutResponse, PostAuthResetPasswordData, PostAuthResetPasswordError, PostAuthResetPasswordRequestData, PostAuthResetPasswordRequestError, PostAuthResetPasswordRequestResponse, PostAuthResetPasswordResponse, PostAuthSignupData, PostAuthSignupError, PostAuthSignupResponse, PostDevicesByDeviceIdPowerOnData, PostDevicesByDeviceIdPowerOnError, PostDevicesByDeviceIdPowerOnResponse, PostDevicesByDeviceIdRebootData, PostDevicesByDeviceIdRebootError, PostDevicesByDeviceIdRebootResponse, PostDevicesByDeviceIdSharesData, PostDevicesByDeviceIdSharesError, PostDevicesByDeviceIdSharesResponse, PostDevicesByDeviceIdShutdownData, PostDevicesByDeviceIdShutdownError, PostDevicesByDeviceIdShutdownResponse, PostDevicesByDeviceIdStatusData, PostDevicesByDeviceIdStatusError, PostDevicesByDeviceIdStatusResponse, PostDevicesData, PostDevicesError, PostDevicesResponse, PutAccountData, PutAccountError, PutAccountPasswordData, PutAccountPasswordError, PutAccountPasswordResponse, PutAccountPreferencesOnboardingData, PutAccountPreferencesOnboardingError, PutAccountPreferencesOnboardingResponse, PutAccountResponse, PutAdminSettingsData, PutAdminSettingsError, PutAdminSettingsResponse, PutAdminUsersByUserIdData, PutAdminUsersByUserIdError, PutAdminUsersByUserIdPasswordData, PutAdminUsersByUserIdPasswordError, PutAdminUsersByUserIdPasswordResponse, PutAdminUsersByUserIdResponse, PutAgentsByAgentIdData, PutAgentsByAgentIdError, PutAgentsByAgentIdResponse, PutDevicesByDeviceIdData, PutDevicesByDeviceIdError, PutDevicesByDeviceIdFavoriteData, PutDevicesByDeviceIdFavoriteError, PutDevicesByDeviceIdFavoriteResponse, PutDevicesByDeviceIdResponse, PutDevicesByDeviceIdSharesByUserIdData, PutDevicesByDeviceIdSharesByUserIdError, PutDevicesByDeviceIdSharesByUserIdResponse } from './types.gen';
 
 export type Options<TComposable extends Composable = '$fetch', TData extends TDataShape = TDataShape, ResT = unknown, DefaultT = undefined> = Options2<TComposable, TData, ResT, DefaultT> & {
     /**
@@ -342,6 +342,26 @@ export const putAdminSettings = <TComposable extends Composable = '$fetch', Defa
 });
 
 /**
+ * Get the firmware sync state
+ */
+export const getAdminFirmware = <TComposable extends Composable = '$fetch', DefaultT extends GetAdminFirmwareResponse = GetAdminFirmwareResponse>(options: Options<TComposable, GetAdminFirmwareData, GetAdminFirmwareResponse, DefaultT>): RequestResult<TComposable, GetAdminFirmwareResponse | DefaultT, DefaultT> => (options.client ?? client).get<TComposable, GetAdminFirmwareResponse | DefaultT, unknown, DefaultT>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/admin/firmware',
+    ...options
+});
+
+/**
+ * Sync firmware releases now
+ *
+ * Checks GitHub for new firmware releases and downloads them.
+ */
+export const postAdminFirmwareSync = <TComposable extends Composable = '$fetch', DefaultT extends PostAdminFirmwareSyncResponse = PostAdminFirmwareSyncResponse>(options: Options<TComposable, PostAdminFirmwareSyncData, PostAdminFirmwareSyncResponse, DefaultT>): RequestResult<TComposable, PostAdminFirmwareSyncResponse | DefaultT, DefaultT> => (options.client ?? client).post<TComposable, PostAdminFirmwareSyncResponse | DefaultT, PostAdminFirmwareSyncError, DefaultT>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/admin/firmware/sync',
+    ...options
+});
+
+/**
  * Enroll an agent
  *
  * Called by an agent with its single-use enrollment token and a secret it generated itself. Returns the token id the agent connects with: `Authorization: Bearer netignite_agent_<token_id>:<secret>`.
@@ -434,6 +454,21 @@ export const postAgentsByAgentIdRevoke = <TComposable extends Composable = '$fet
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/agents/{agentID}/revoke',
     ...options
+});
+
+/**
+ * Create an ESP32 flash image
+ *
+ * Creates the NVS image the web installer flashes together with the firmware: the server URL, the agent's name and a new single-use enrollment token (valid 15 minutes; older unused tokens stop working). The agent enrolls with it on its first connection, which replaces its current credential.
+ */
+export const postAgentsByAgentIdFlashImage = <TComposable extends Composable = '$fetch', DefaultT extends PostAgentsByAgentIdFlashImageResponse = PostAgentsByAgentIdFlashImageResponse>(options: Options<TComposable, PostAgentsByAgentIdFlashImageData, PostAgentsByAgentIdFlashImageResponse, DefaultT>): RequestResult<TComposable, PostAgentsByAgentIdFlashImageResponse | DefaultT, DefaultT> => (options.client ?? client).post<TComposable, PostAgentsByAgentIdFlashImageResponse | DefaultT, PostAgentsByAgentIdFlashImageError, DefaultT>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/agents/{agentID}/flash-image',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
 });
 
 /**
@@ -603,4 +638,26 @@ export const putDevicesByDeviceIdSharesByUserId = <TComposable extends Composabl
         'Content-Type': 'application/json',
         ...options.headers
     }
+});
+
+/**
+ * List firmware releases
+ *
+ * ESP32 firmware releases available for the web installer and OTA updates, newest first. They are synced from the GitHub releases of the Agent-ESP32 repository.
+ */
+export const getFirmware = <TComposable extends Composable = '$fetch', DefaultT extends GetFirmwareResponse = GetFirmwareResponse>(options: Options<TComposable, GetFirmwareData, GetFirmwareResponse, DefaultT>): RequestResult<TComposable, GetFirmwareResponse | DefaultT, DefaultT> => (options.client ?? client).get<TComposable, GetFirmwareResponse | DefaultT, unknown, DefaultT>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/firmware',
+    ...options
+});
+
+/**
+ * Download a firmware file
+ *
+ * A flash image (or the signature) of a synced release, for the web installer.
+ */
+export const getFirmwareByVersionFilesByFile = <TComposable extends Composable = '$fetch', DefaultT extends GetFirmwareByVersionFilesByFileResponse = GetFirmwareByVersionFilesByFileResponse>(options: Options<TComposable, GetFirmwareByVersionFilesByFileData, GetFirmwareByVersionFilesByFileResponse, DefaultT>): RequestResult<TComposable, GetFirmwareByVersionFilesByFileResponse | DefaultT, DefaultT> => (options.client ?? client).get<TComposable, GetFirmwareByVersionFilesByFileResponse | DefaultT, GetFirmwareByVersionFilesByFileError, DefaultT>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/firmware/{version}/files/{file}',
+    ...options
 });

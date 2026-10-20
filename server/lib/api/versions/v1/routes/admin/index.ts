@@ -20,3 +20,4 @@ router.use("*", async (c, next) => {
 
 router.route("/", (await import("./users")).router);
 router.route("/", (await import("./settings")).router);
+router.route("/", (await import("./firmware")).router);

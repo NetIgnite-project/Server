@@ -12,6 +12,7 @@ import { UserAccountSettings } from "../api/utils/shared-models/accountData";
 import {
 	AgentSettings,
 	DeviceSettings,
+	type FirmwareSettings,
 	ShareSettings,
 } from "../api/utils/shared-models/netigniteData";
 import { SQLUtils } from "./utils";
@@ -184,6 +185,24 @@ export const agentEnrollments = sqliteTable("agent_enrollments", {
 	created_at: SQLUtils.getCreatedAtColumn(),
 	expires_at: integer().notNull(),
 	used_at: integer(),
+});
+
+/**
+ * @deprecated Use DB.Tables.firmwareReleases to access this table.
+ *
+ * ESP32 firmware releases synced from GitHub; the files are in `<FIRMWARE_DIR>/<version>/`.
+ */
+export const firmwareReleases = sqliteTable("firmware_releases", {
+	version: text().primaryKey(),
+	prerelease: integer({ mode: "boolean" }).notNull(),
+	published_at: integer().notNull(),
+	release_url: text().notNull(),
+	notes: text().notNull().default(""),
+	// The release's release.json.
+	manifest: text({ mode: "json" }).$type<FirmwareSettings.Manifest>().notNull(),
+	// Whether firmware.sig was checked against FIRMWARE_PUBLIC_KEY.
+	signature_verified: integer({ mode: "boolean" }).notNull(),
+	created_at: SQLUtils.getCreatedAtColumn(),
 });
 
 /**

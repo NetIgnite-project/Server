@@ -132,6 +132,16 @@ export class ConfigHandler {
 
 		APP_URL: CS.string(),
 
+		// ESP32 firmware for the web installer and OTA updates, synced from the GitHub releases of
+		// FIRMWARE_REPO. FIRMWARE_PUBLIC_KEY: path to a PEM ECDSA P-256 public key; when set, only
+		// releases with a valid firmware.sig are accepted.
+		FIRMWARE_SYNC: CS.boolean().default(true),
+		FIRMWARE_REPO: CS.string().default("NetIgnite-project/Agent-ESP32"),
+		FIRMWARE_DIR: CS.string().default("./data/firmware"),
+		FIRMWARE_PUBLIC_KEY: CS.string().optional(),
+		/** Optional; raises GitHub's API rate limit for the release sync. */
+		GITHUB_TOKEN: CS.string().optional(),
+
 		SMTP_HOST: CS.string().optional(),
 		SMTP_PORT: CS.number().optional(),
 		SMTP_USERNAME: CS.string().optional(),

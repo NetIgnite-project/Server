@@ -244,9 +244,20 @@ async function onDelete() {
 				icon="i-lucide-plug"
 			>
 				<template v-if="agent.data.value.kind === 'esp32'">
-					<ol class="list-decimal space-y-1 pl-5 text-sm text-slate-300">
+					<p class="text-sm text-slate-300">
+						The easiest way: install the firmware from your browser. It sets up Wi-Fi and connects the agent.
+					</p>
+					<UButton
+						class="mt-3"
+						label="Open the web installer"
+						icon="i-lucide-usb"
+						:to="`/dashboard/agents/${agent.data.value.id}/install`"
+					/>
+
+					<p class="mt-6 text-sm font-medium text-white">Or over the serial console</p>
+					<ol class="mt-2 list-decimal space-y-1 pl-5 text-sm text-slate-300">
 						<li>
-							Flash the NetIgnite ESP32 firmware v2 and open its serial console (USB, 115200 baud), for
+							On an ESP32 with the NetIgnite firmware v2, open its serial console (USB, 115200 baud), for
 							example with PlatformIO's Serial Monitor.
 						</li>
 						<li>
@@ -254,7 +265,6 @@ async function onDelete() {
 						</li>
 						<li>Create the setup command below and paste it into the console. It works once and expires after 15 minutes.</li>
 					</ol>
-					<p class="mt-2 text-xs text-slate-500">A one-click browser installer is coming in a later update.</p>
 				</template>
 
 				<template v-else>

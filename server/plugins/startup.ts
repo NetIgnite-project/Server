@@ -4,6 +4,7 @@ import { API } from "../lib/api";
 import { EmailService } from "../lib/api/utils/email";
 import { DB } from "../lib/db";
 import { DeviceStatusService } from "../lib/devices/status";
+import { FirmwareCatalog } from "../lib/firmware/catalog";
 import { TaskScheduler } from "../lib/tasks";
 import { Utils } from "../lib/utils";
 import { ConfigHandler } from "../lib/utils/config";
@@ -89,6 +90,14 @@ export default defineNitroPlugin(async (nitroApp) => {
 
 	await EmailService.init();
 
+	await FirmwareCatalog.configure({
+		repo: config.FIRMWARE_REPO,
+		apiURL: "https://api.github.com",
+		dir: config.FIRMWARE_DIR,
+		publicKeyPath: config.FIRMWARE_PUBLIC_KEY ?? null,
+		token: config.GITHUB_TOKEN ?? null,
+	});
+
 	await CronJobHandler.init();
 	await CronJobHandler.startAll();
 
@@ -102,4 +111,9 @@ export default defineNitroPlugin(async (nitroApp) => {
 
 	AgentGatewayRunner.start();
 	DeviceStatusService.start();
+
+	if (config.FIRMWARE_SYNC) {
+		// In the background: the server is usable while the firmware downloads.
+		void FirmwareCatalog.sync();
+	}
 });

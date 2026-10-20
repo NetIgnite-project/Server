@@ -6,6 +6,9 @@ import z from "zod";
 import { AgentAuth } from "../../../../../agents/auth";
 import { AgentCloseCodes, AgentRegistry } from "../../../../../agents/registry";
 import { DB } from "../../../../../db";
+import { FirmwareCatalog } from "../../../../../firmware/catalog";
+import { ProvisioningImage } from "../../../../../firmware/provisioning";
+import { ConfigHandler } from "../../../../../utils/config";
 import { Logger } from "../../../../../utils/logger";
 import { APIResponse } from "../../../../utils/api-res";
 import { APIResponseSpec, APIRouteSpec } from "../../../../utils/specHelpers";
@@ -293,5 +296,59 @@ router.post(
 			.where(eq(DB.Tables.agents.id, agent.id))
 			.get();
 		return APIResponse.success(c, "Credential revoked", toAgentResponse(updated ?? agent));
+	},
+);
+
+router.post(
+	"/:agentID/flash-image",
+
+	APIRouteSpec.authenticated({
+		summary: "Create an ESP32 flash image",
+		description:
+			"Creates the NVS image the web installer flashes together with the firmware: the server URL, the " +
+			"agent's name and a new single-use enrollment token (valid 15 minutes; older unused tokens stop " +
+			"working). The agent enrolls with it on its first connection, which replaces its current credential.",
+		tags: [DOCS_TAGS.AGENTS],
+		responses: APIResponseSpec.describeWithWrongInputs(
+			APIResponseSpec.created("Flash image created", AgentsModel.FlashImage.Response),
+			APIResponseSpec.notFound("Agent or firmware release not found"),
+		),
+	}),
+
+	validator("json", AgentsModel.FlashImage.Body),
+
+	async (c) => {
+		const agent = getAgent(c);
+		if (agent.kind !== "esp32") {
+			return APIResponse.badRequest(c, "Only ESP32 agents are installed from the browser");
+		}
+
+		const body = c.req.valid("json");
+		const release = await FirmwareCatalog.get(body.version);
+		if (!release) return APIResponse.notFound(c, "Firmware release not found");
+		if (!ProvisioningImage.supports(release.manifest)) {
+			return APIResponse.badRequest(
+				c,
+				`Firmware ${release.version} can't be set up by the web installer`,
+			);
+		}
+
+		const appURL = ConfigHandler.getConfig()?.APP_URL ?? "";
+		const serverURL = (body.server_url ?? appURL).replace(/\/$/, "");
+		const enrollment = await AgentAuth.createEnrollment(agent.id, getUserID(c));
+		const image = ProvisioningImage.build(release.manifest, {
+			server: serverURL,
+			enroll: enrollment.token,
+			name: agent.name,
+		});
+
+		// The image holds a credential: never cache it.
+		c.header("Cache-Control", "no-store");
+		return APIResponse.created(c, "Flash image created", {
+			image: Buffer.from(image).toString("base64"),
+			offset: release.manifest.nvs.offset,
+			server_url: serverURL,
+			expires_at: enrollment.expires_at,
+		} satisfies AgentsModel.FlashImage.Response);
 	},
 );

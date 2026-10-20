@@ -421,12 +421,14 @@ export const zGetAdminSettingsResponse = z.object({
     code: z.literal(200),
     message: z.literal('Settings retrieved'),
     data: z.object({
-        registration_enabled: z.boolean()
+        registration_enabled: z.boolean(),
+        firmware_channel: z.enum(['stable', 'prerelease'])
     })
 });
 
 export const zPutAdminSettingsBody = z.object({
-    registration_enabled: z.boolean().optional()
+    registration_enabled: z.boolean().optional(),
+    firmware_channel: z.enum(['stable', 'prerelease']).optional()
 });
 
 /**
@@ -437,7 +439,50 @@ export const zPutAdminSettingsResponse = z.object({
     code: z.literal(200),
     message: z.literal('Settings updated'),
     data: z.object({
-        registration_enabled: z.boolean()
+        registration_enabled: z.boolean(),
+        firmware_channel: z.enum(['stable', 'prerelease'])
+    })
+});
+
+/**
+ * Sync state retrieved
+ */
+export const zGetAdminFirmwareResponse = z.object({
+    success: z.literal(true),
+    code: z.literal(200),
+    message: z.literal('Sync state retrieved'),
+    data: z.object({
+        enabled: z.boolean(),
+        repo: z.string(),
+        signature_required: z.boolean(),
+        last_run_at: z.number().nullable(),
+        last_success_at: z.number().nullable(),
+        error: z.string().nullable()
+    })
+});
+
+/**
+ * Sync finished
+ */
+export const zPostAdminFirmwareSyncResponse = z.object({
+    success: z.literal(true),
+    code: z.literal(200),
+    message: z.literal('Sync finished'),
+    data: z.object({
+        added: z.array(z.string()),
+        removed: z.array(z.string()),
+        skipped: z.array(z.object({
+            version: z.string(),
+            reason: z.string()
+        })),
+        state: z.object({
+            enabled: z.boolean(),
+            repo: z.string(),
+            signature_required: z.boolean(),
+            last_run_at: z.number().nullable(),
+            last_success_at: z.number().nullable(),
+            error: z.string().nullable()
+        })
     })
 });
 
@@ -641,6 +686,30 @@ export const zPostAgentsByAgentIdRevokeResponse = z.object({
         last_seen_at: z.number().nullable(),
         enrolled_at: z.number().nullable(),
         created_at: z.number()
+    })
+});
+
+export const zPostAgentsByAgentIdFlashImageBody = z.object({
+    version: z.string().regex(/^\d+\.\d+\.\d+(?:-[0-9A-Za-z.]+)?$/),
+    server_url: z.url().max(200).optional()
+});
+
+export const zPostAgentsByAgentIdFlashImagePath = z.object({
+    agentID: z.int().gt(0).lte(9007199254740991)
+});
+
+/**
+ * Flash image created
+ */
+export const zPostAgentsByAgentIdFlashImageResponse = z.object({
+    success: z.literal(true),
+    code: z.literal(201),
+    message: z.literal('Flash image created'),
+    data: z.object({
+        image: z.string(),
+        offset: z.number(),
+        server_url: z.string(),
+        expires_at: z.number()
     })
 });
 
@@ -1242,3 +1311,42 @@ export const zPutDevicesByDeviceIdSharesByUserIdResponse = z.object({
     message: z.literal('Share updated'),
     data: z.null()
 });
+
+/**
+ * Firmware releases retrieved
+ */
+export const zGetFirmwareResponse = z.object({
+    success: z.literal(true),
+    code: z.literal(200),
+    message: z.literal('Firmware releases retrieved'),
+    data: z.object({
+        channel: z.enum(['stable', 'prerelease']),
+        recommended: z.string().nullable(),
+        releases: z.array(z.object({
+            version: z.string(),
+            prerelease: z.boolean(),
+            published_at: z.number(),
+            release_url: z.string(),
+            notes: z.string(),
+            signature_verified: z.boolean(),
+            chip_family: z.string(),
+            parts: z.array(z.object({
+                file: z.string(),
+                offset: z.number(),
+                size: z.number(),
+                sha256: z.string()
+            })),
+            nvs_offset: z.number()
+        }))
+    })
+});
+
+export const zGetFirmwareByVersionFilesByFilePath = z.object({
+    version: z.string().regex(/^\d+\.\d+\.\d+(?:-[0-9A-Za-z.]+)?$/),
+    file: z.string().regex(/^[A-Za-z0-9_.-]+$/)
+});
+
+/**
+ * The file
+ */
+export const zGetFirmwareByVersionFilesByFileResponse = z.string();

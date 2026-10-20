@@ -23,6 +23,13 @@ function setTestEnv(rootDir: string) {
 
 		NETIGNITE_APP_URL: "http://localhost:18232",
 
+		// Tests configure the catalog with a fake GitHub (tests/firmware.test.ts).
+		NETIGNITE_FIRMWARE_SYNC: false,
+		NETIGNITE_FIRMWARE_REPO: "NetIgnite-project/Agent-ESP32",
+		NETIGNITE_FIRMWARE_DIR: path.join(rootDir, "firmware"),
+		NETIGNITE_FIRMWARE_PUBLIC_KEY: undefined,
+		NETIGNITE_GITHUB_TOKEN: undefined,
+
 		NETIGNITE_SMTP_HOST: "127.0.0.1",
 		NETIGNITE_SMTP_PORT: 12587,
 		NETIGNITE_SMTP_USERNAME: "",
@@ -32,7 +39,8 @@ function setTestEnv(rootDir: string) {
 	} as const satisfies ENVConfigLike;
 
 	for (const [key, value] of Object.entries(envVars)) {
-		process.env[key] = String(value);
+		if (value === undefined) delete process.env[key];
+		else process.env[key] = String(value);
 	}
 }
 

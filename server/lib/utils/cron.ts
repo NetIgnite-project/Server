@@ -1,4 +1,6 @@
 import type { CronJob as BunCronJob } from "bun";
+import { FirmwareCatalog } from "../firmware/catalog";
+import { ConfigHandler } from "./config";
 import { Logger } from "./logger";
 
 class CronJob {
@@ -35,15 +37,14 @@ export class CronJobHandler {
 		if (this.initialized) return;
 		this.initialized = true;
 
-		this.jobs.push(
-			new CronJob("* * * * *", async () => {
-				// do something every minute
-			}),
-
-			new CronJob("* * * * *", async () => {
-				// do something every minute
-			}),
-		);
+		if (ConfigHandler.getConfig()?.FIRMWARE_SYNC) {
+			// New firmware releases (every 6 hours, off the hour to spread GitHub API requests).
+			this.jobs.push(
+				new CronJob("17 */6 * * *", async () => {
+					await FirmwareCatalog.sync();
+				}),
+			);
+		}
 	}
 
 	static async startAll() {

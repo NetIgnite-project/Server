@@ -52,3 +52,49 @@ export namespace ShareSettings {
 	export const Role = z.enum(Roles);
 	export type Role = z.infer<typeof Role>;
 }
+
+export namespace FirmwareSettings {
+	/** `stable`: releases only. `prerelease`: also betas and release candidates. */
+	export const Channels = ["stable", "prerelease"] as const;
+	export const Channel = z.enum(Channels);
+	export type Channel = z.infer<typeof Channel>;
+
+	/** `2.0.0`, `2.1.0-beta.1`: a release tag without its `v`. */
+	export const Version = z.string().regex(/^\d+\.\d+\.\d+(?:-[0-9A-Za-z.]+)?$/, "Invalid version");
+
+	const FileName = z.string().regex(/^[A-Za-z0-9_.-]+$/, "Invalid file name");
+
+	/**
+	 * `release.json` of an Agent-ESP32 release (scripts/collect_release.py): the flash images with
+	 * their offsets, and where the installer writes the agent's provisioning data.
+	 */
+	export const Manifest = z.object({
+		format: z.literal(1),
+		name: z.string(),
+		version: Version,
+		chip_family: z.literal("ESP32"),
+		board: z.string(),
+		protocol: z.number().int(),
+		parts: z
+			.array(
+				z.object({
+					file: FileName,
+					offset: z.number().int().nonnegative(),
+					size: z.number().int().positive(),
+					sha256: z.string().regex(/^[0-9a-f]{64}$/),
+				}),
+			)
+			.min(1),
+		nvs: z.object({
+			offset: z.number().int().nonnegative(),
+			size: z.number().int().positive(),
+			namespace: z.string().min(1).max(15),
+			keys: z.array(z.string()),
+		}),
+		app: z.object({
+			file: FileName,
+			signature: FileName.nullable(),
+		}),
+	});
+	export type Manifest = z.infer<typeof Manifest>;
+}

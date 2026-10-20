@@ -8,11 +8,13 @@ export const DOCS_TAGS = {
 	AGENTS: "Agents",
 	DEVICES: "Devices",
 	DEVICE_SHARES: "Devices / Sharing",
+	FIRMWARE: "Firmware",
 
 	ADMIN_API: {
 		BASE: "Admin",
 
 		USERS: "Admin / Users",
 		SETTINGS: "Admin / Settings",
+		FIRMWARE: "Admin / Firmware",
 	},
 };

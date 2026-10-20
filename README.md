@@ -29,6 +29,28 @@ The server listens on port **18232**. On first start it creates the user `admin`
 password-reset link to `config/initial_admin_password_reset_token.txt` (also printed to the log).
 Set `NETIGNITE_APP_URL` to the server's public URL; production logins need HTTPS.
 
+### ESP32 web installer
+
+Agents → an ESP32 agent → **Install** flashes the NetIgnite firmware from the browser (ESP Web
+Tools: Chrome, Edge or Firefox 151+ on a computer) and sets up Wi-Fi over Improv; the Wi-Fi
+password goes from the browser to the ESP32 only. Browsers allow USB access only on HTTPS pages
+(or `localhost`), so serve NetIgnite over HTTPS.
+
+The firmware comes from the GitHub releases of
+[Agent-ESP32](https://github.com/NetIgnite-project/Agent-ESP32): the server downloads the newest
+releases into `data/firmware/` on start and every 6 hours (admins: Server Settings → Sync now) and
+checks each file's SHA-256. The flash image also holds the agent's setup data: the server URL, its
+name and a single-use enrollment token (15 minutes). The agent generates its long-term secret
+itself when it enrolls.
+
+| Variable | Default | |
+| --- | --- | --- |
+| `NETIGNITE_FIRMWARE_SYNC` | `true` | Sync automatically; `false` for offline servers |
+| `NETIGNITE_FIRMWARE_REPO` | `NetIgnite-project/Agent-ESP32` | GitHub repository to sync from |
+| `NETIGNITE_FIRMWARE_DIR` | `./data/firmware` | Where releases are stored |
+| `NETIGNITE_FIRMWARE_PUBLIC_KEY` | — | PEM ECDSA P-256 key; then only signed releases are accepted |
+| `NETIGNITE_GITHUB_TOKEN` | — | Raises GitHub's API rate limit |
+
 ### Upgrading from v1
 
 The v2 image uses the same `/opt/netignite/data` and `/opt/netignite/config` volumes as v1. Its
@@ -81,7 +103,8 @@ bun run api-client:generate
 | --- | --- |
 | `server/lib/agents/` | Agent protocol, credentials, gateway and live connection registry |
 | `server/lib/devices/` | Device permissions (sharing roles), status polling, power actions |
-| `server/lib/api/versions/v1/routes/` | REST routes (`agents`, `devices`, `auth`, `account`, `admin`) |
+| `server/lib/firmware/` | Firmware catalog (GitHub release sync), NVS image writer for the web installer |
+| `server/lib/api/versions/v1/routes/` | REST routes (`agents`, `devices`, `firmware`, `auth`, `account`, `admin`) |
 | `server/lib/migration/v1Import.ts` | v1 database import |
 | `app/pages/dashboard/` | Dashboard: overview, devices, agents, settings, admin |
 

@@ -1065,6 +1065,7 @@ export type GetAdminSettingsResponses = {
         message: 'Settings retrieved';
         data: {
             registration_enabled: boolean;
+            firmware_channel: 'stable' | 'prerelease';
         };
     };
 };
@@ -1074,6 +1075,7 @@ export type GetAdminSettingsResponse = GetAdminSettingsResponses[keyof GetAdminS
 export type PutAdminSettingsData = {
     body?: {
         registration_enabled?: boolean;
+        firmware_channel?: 'stable' | 'prerelease';
     };
     path?: never;
     query?: never;
@@ -1103,11 +1105,89 @@ export type PutAdminSettingsResponses = {
         message: 'Settings updated';
         data: {
             registration_enabled: boolean;
+            firmware_channel: 'stable' | 'prerelease';
         };
     };
 };
 
 export type PutAdminSettingsResponse = PutAdminSettingsResponses[keyof PutAdminSettingsResponses];
+
+export type GetAdminFirmwareData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/admin/firmware';
+};
+
+export type GetAdminFirmwareResponses = {
+    /**
+     * Sync state retrieved
+     */
+    200: {
+        success: true;
+        code: 200;
+        message: 'Sync state retrieved';
+        data: {
+            enabled: boolean;
+            repo: string;
+            signature_required: boolean;
+            last_run_at: number | null;
+            last_success_at: number | null;
+            error: string | null;
+        };
+    };
+};
+
+export type GetAdminFirmwareResponse = GetAdminFirmwareResponses[keyof GetAdminFirmwareResponses];
+
+export type PostAdminFirmwareSyncData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/admin/firmware/sync';
+};
+
+export type PostAdminFirmwareSyncErrors = {
+    /**
+     * GitHub couldn't be reached or answered with an error
+     */
+    502: {
+        success: false;
+        code: 502;
+        message: 'GitHub couldn\'t be reached or answered with an error';
+    };
+};
+
+export type PostAdminFirmwareSyncError = PostAdminFirmwareSyncErrors[keyof PostAdminFirmwareSyncErrors];
+
+export type PostAdminFirmwareSyncResponses = {
+    /**
+     * Sync finished
+     */
+    200: {
+        success: true;
+        code: 200;
+        message: 'Sync finished';
+        data: {
+            added: Array<string>;
+            removed: Array<string>;
+            skipped: Array<{
+                version: string;
+                reason: string;
+            }>;
+            state: {
+                enabled: boolean;
+                repo: string;
+                signature_required: boolean;
+                last_run_at: number | null;
+                last_success_at: number | null;
+                error: string | null;
+            };
+        };
+    };
+};
+
+export type PostAdminFirmwareSyncResponse = PostAdminFirmwareSyncResponses[keyof PostAdminFirmwareSyncResponses];
 
 export type PostAgentsEnrollData = {
     body: {
@@ -1520,6 +1600,58 @@ export type PostAgentsByAgentIdRevokeResponses = {
 };
 
 export type PostAgentsByAgentIdRevokeResponse = PostAgentsByAgentIdRevokeResponses[keyof PostAgentsByAgentIdRevokeResponses];
+
+export type PostAgentsByAgentIdFlashImageData = {
+    body: {
+        version: string;
+        server_url?: string;
+    };
+    path: {
+        agentID: number;
+    };
+    query?: never;
+    url: '/agents/{agentID}/flash-image';
+};
+
+export type PostAgentsByAgentIdFlashImageErrors = {
+    /**
+     * Bad Request: Syntax or validation error in request
+     */
+    400: {
+        success: false;
+        code: 400;
+        message: 'Bad Request: Syntax or validation error in request';
+    };
+    /**
+     * Agent or firmware release not found
+     */
+    404: {
+        success: false;
+        code: 404;
+        message: 'Agent or firmware release not found';
+    };
+};
+
+export type PostAgentsByAgentIdFlashImageError = PostAgentsByAgentIdFlashImageErrors[keyof PostAgentsByAgentIdFlashImageErrors];
+
+export type PostAgentsByAgentIdFlashImageResponses = {
+    /**
+     * Flash image created
+     */
+    201: {
+        success: true;
+        code: 201;
+        message: 'Flash image created';
+        data: {
+            image: string;
+            offset: number;
+            server_url: string;
+            expires_at: number;
+        };
+    };
+};
+
+export type PostAgentsByAgentIdFlashImageResponse = PostAgentsByAgentIdFlashImageResponses[keyof PostAgentsByAgentIdFlashImageResponses];
 
 export type GetDevicesData = {
     body?: never;
@@ -2540,3 +2672,83 @@ export type PutDevicesByDeviceIdSharesByUserIdResponses = {
 };
 
 export type PutDevicesByDeviceIdSharesByUserIdResponse = PutDevicesByDeviceIdSharesByUserIdResponses[keyof PutDevicesByDeviceIdSharesByUserIdResponses];
+
+export type GetFirmwareData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/firmware';
+};
+
+export type GetFirmwareResponses = {
+    /**
+     * Firmware releases retrieved
+     */
+    200: {
+        success: true;
+        code: 200;
+        message: 'Firmware releases retrieved';
+        data: {
+            channel: 'stable' | 'prerelease';
+            recommended: string | null;
+            releases: Array<{
+                version: string;
+                prerelease: boolean;
+                published_at: number;
+                release_url: string;
+                notes: string;
+                signature_verified: boolean;
+                chip_family: string;
+                parts: Array<{
+                    file: string;
+                    offset: number;
+                    size: number;
+                    sha256: string;
+                }>;
+                nvs_offset: number;
+            }>;
+        };
+    };
+};
+
+export type GetFirmwareResponse = GetFirmwareResponses[keyof GetFirmwareResponses];
+
+export type GetFirmwareByVersionFilesByFileData = {
+    body?: never;
+    path: {
+        version: string;
+        file: string;
+    };
+    query?: never;
+    url: '/firmware/{version}/files/{file}';
+};
+
+export type GetFirmwareByVersionFilesByFileErrors = {
+    /**
+     * Validation Error
+     */
+    400: {
+        success: false;
+        error: Array<unknown>;
+        data: unknown;
+    };
+    /**
+     * Unknown release or file
+     */
+    404: {
+        success: false;
+        code: 404;
+        message: 'Unknown release or file';
+    };
+};
+
+export type GetFirmwareByVersionFilesByFileError = GetFirmwareByVersionFilesByFileErrors[keyof GetFirmwareByVersionFilesByFileErrors];
+
+export type GetFirmwareByVersionFilesByFileResponses = {
+    /**
+     * The file
+     */
+    200: Blob | File;
+};
+
+export type GetFirmwareByVersionFilesByFileResponse = GetFirmwareByVersionFilesByFileResponses[keyof GetFirmwareByVersionFilesByFileResponses];
