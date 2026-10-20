@@ -106,9 +106,13 @@ async function createEnrollment() {
 	enrollment.value = res.data;
 }
 
-const pairCommand = computed(() =>
-	enrollment.value ? `sudo netignite-agent pair ${appUrl} ${enrollment.value.token}` : "",
-);
+// The command that sets the agent up: the Linux agent's CLI, or the ESP32 firmware's serial console.
+const setupCommand = computed(() => {
+	if (!enrollment.value || agent.isNew) return "";
+	return agent.data.value.kind === "linux"
+		? `sudo netignite-agent pair ${appUrl} ${enrollment.value.token}`
+		: `setup ${appUrl} ${enrollment.value.token}`;
+});
 
 async function copy(text: string) {
 	try {
@@ -240,13 +244,17 @@ async function onDelete() {
 				icon="i-lucide-plug"
 			>
 				<template v-if="agent.data.value.kind === 'esp32'">
-					<UAlert
-						color="info"
-						variant="soft"
-						icon="i-lucide-usb"
-						title="Install from your browser"
-						description="The browser installer for the ESP32 firmware comes with the v2 firmware. Until then, use a manual enrollment token below."
-					/>
+					<ol class="list-decimal space-y-1 pl-5 text-sm text-slate-300">
+						<li>
+							Flash the NetIgnite ESP32 firmware v2 and open its serial console (USB, 115200 baud), for
+							example with PlatformIO's Serial Monitor.
+						</li>
+						<li>
+							Connect it to Wi-Fi: <code class="font-mono text-slate-200">wifi "&lt;network&gt;" "&lt;password&gt;"</code>
+						</li>
+						<li>Create the setup command below and paste it into the console. It works once and expires after 15 minutes.</li>
+					</ol>
+					<p class="mt-2 text-xs text-slate-500">A one-click browser installer is coming in a later update.</p>
 				</template>
 
 				<template v-else>
@@ -258,7 +266,7 @@ async function onDelete() {
 
 				<div class="mt-4 space-y-3">
 					<UButton
-						:label="enrollment ? 'Create a new token' : agent.data.value.kind === 'linux' ? 'Create pairing command' : 'Create enrollment token'"
+						:label="enrollment ? 'Create a new command' : 'Create setup command'"
 						icon="i-lucide-key-round"
 						color="neutral"
 						variant="outline"
@@ -269,7 +277,7 @@ async function onDelete() {
 					<template v-if="enrollment">
 						<div class="flex items-start gap-2 rounded-lg border border-slate-800 bg-slate-900/60 p-3">
 							<code class="flex-1 break-all font-mono text-sm text-slate-200">
-								{{ agent.data.value.kind === "linux" ? pairCommand : enrollment.token }}
+								{{ setupCommand }}
 							</code>
 							<UButton
 								icon="i-lucide-copy"
@@ -277,7 +285,7 @@ async function onDelete() {
 								variant="ghost"
 								size="sm"
 								aria-label="Copy"
-								@click="copy(agent.data.value.kind === 'linux' ? pairCommand : enrollment.token)"
+								@click="copy(setupCommand)"
 							/>
 						</div>
 						<p class="text-xs text-slate-500">
