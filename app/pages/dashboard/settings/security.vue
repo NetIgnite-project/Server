@@ -7,10 +7,7 @@ const toast = useToast();
 
 const passwordSchema = z.object({
 	current_password: z.string("Current Password is required").min(1, "Current Password is required"),
-	new_password: z
-		.string("Password is required")
-		.min(8, "Must be at least 8 characters")
-		.max(128, "Must be at most 128 characters"),
+	new_password: passwordRule,
 	confirm_password: z.string("Confirm Password is required").min(1, "Confirm Password is required"),
 });
 
@@ -149,7 +146,7 @@ async function onDeleteAccount() {
 				<UFormField
 					name="new_password"
 					label="New Password"
-					description="At least 8 characters."
+					:description="PASSWORD_HINT"
 					required
 					class="flex items-start justify-between gap-4 py-4 first:pt-0 last:pb-0 max-sm:flex-col"
 					:ui="{ root: 'w-full sm:w-auto', container: 'w-full sm:w-auto' }"

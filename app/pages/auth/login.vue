@@ -40,7 +40,7 @@ const fields: AuthFormField[] = [
 		name: "remember",
 		label: "Remember me",
 		type: "checkbox",
-		description: "You will stay logged in for 30 days.",
+		description: "You will stay logged in for 7 days.",
 	},
 ];
 
@@ -88,7 +88,8 @@ async function onSubmit(payload: FormSubmitEvent<Schema>) {
 
 	updateAPIClient(result.data.token);
 	useAppCookies().sessionToken.set(result.data.token, {
-		maxAge: payload.data.remember ? 60 * 60 * 24 * 30 : undefined, // 30 days only with "remember me"
+		// As long as the session lasts (7 days, server/lib/api/utils/authHandler.ts), only with "remember me"
+		maxAge: payload.data.remember ? 60 * 60 * 24 * 7 : undefined,
 	});
 
 	// Fresh per-user state for the new session.

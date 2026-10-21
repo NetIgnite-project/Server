@@ -297,7 +297,7 @@ async function onDeleteUser() {
 		icon-color="amber"
 	>
 		<div class="space-y-4">
-			<UFormField label="New Password" description="At least 8 characters.">
+			<UFormField label="New Password" :description="PASSWORD_HINT">
 				<UInput v-model="passwordForm.password" type="password" placeholder="••••••••" class="w-full" />
 			</UFormField>
 

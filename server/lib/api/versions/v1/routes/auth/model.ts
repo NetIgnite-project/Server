@@ -34,7 +34,7 @@ export namespace AuthModel.Signup {
 		username: UserDataPolicies.Username,
 		display_name: z.string().trim().min(1).max(64).optional(),
 		email: z.email().trim(),
-		password: z.string().min(8).max(128),
+		password: UserDataPolicies.Password,
 	});
 	export type Body = z.infer<typeof Body>;
 

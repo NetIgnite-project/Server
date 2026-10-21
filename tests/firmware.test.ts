@@ -438,3 +438,17 @@ describe("Provisioning image", () => {
 		expect(ProvisioningImage.hostname("a".repeat(80)).length).toBe(63);
 	});
 });
+
+describe("Firmware signature key", () => {
+	test("an unreadable public key fails every sync instead of accepting unsigned firmware", async () => {
+		await FirmwareCatalog.configure({
+			repo: "NetIgnite-project/Agent-ESP32",
+			apiURL: "http://127.0.0.1:1",
+			dir: path.join(firmwareDir, "..", "firmware-nokey"),
+			publicKeyPath: path.join(firmwareDir, "..", "missing.pub.pem"),
+			token: null,
+		});
+		const result = await FirmwareCatalog.sync();
+		expect(result.error).toStartWith("NETIGNITE_FIRMWARE_PUBLIC_KEY: can't use");
+	});
+});

@@ -35,10 +35,7 @@ const fields: AuthFormField[] = [
 ];
 
 const schema = z.object({
-	password: z
-		.string("Password is required")
-		.min(8, "Must be at least 8 characters")
-		.max(128, "Must be at most 128 characters"),
+	password: passwordRule,
 	confirm_password: z.string("Confirm Password is required").min(1, "Confirm Password is required"),
 });
 

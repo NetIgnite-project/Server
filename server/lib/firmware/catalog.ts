@@ -27,10 +27,24 @@ export class FirmwareCatalog {
 	protected static running: Promise<FirmwareCatalog.SyncResult> | null = null;
 
 	static async configure(source: FirmwareCatalog.SourceOptions) {
+		let publicKey: string | null = null;
+		let configError: string | null = null;
+		if (source.publicKeyPath) {
+			try {
+				publicKey = await Bun.file(source.publicKeyPath).text();
+				if (!publicKey.includes("BEGIN PUBLIC KEY")) throw new Error("not a PEM public key");
+			} catch (error) {
+				// Don't fall back to unsigned firmware: every sync fails until the key is fixed.
+				configError = `NETIGNITE_FIRMWARE_PUBLIC_KEY: can't use ${source.publicKeyPath} (${(error as Error).message})`;
+				Logger.error(configError);
+			}
+		}
+
 		this.source = {
 			...source,
 			apiURL: source.apiURL.replace(/\/$/, ""),
-			publicKey: source.publicKeyPath ? await Bun.file(source.publicKeyPath).text() : null,
+			publicKey,
+			configError,
 		};
 	}
 
@@ -108,6 +122,7 @@ export class FirmwareCatalog {
 		}
 
 		try {
+			if (source.configError) throw new Error(source.configError);
 			const result = await this.syncFrom(source);
 			await RuntimeMetadata.setFirmwareSyncState({
 				last_run_at: startedAt,
@@ -351,6 +366,8 @@ export namespace FirmwareCatalog {
 
 	export interface Source extends Omit<SourceOptions, "publicKeyPath"> {
 		publicKey: string | null;
+		/** A configuration problem (unreadable public key) that makes every sync fail. */
+		configError: string | null;
 	}
 
 	export interface SyncResult {

@@ -164,6 +164,9 @@ export type PostAuthSignupData = {
         username: string;
         display_name?: string;
         email: string;
+        /**
+         * New password for the account
+         */
         password: string;
     };
     path?: never;
@@ -791,6 +794,9 @@ export type PostAdminUsersData = {
         display_name: string;
         email: string;
         role?: 'admin' | 'user';
+        /**
+         * New password for the account
+         */
         password: string;
     };
     path?: never;

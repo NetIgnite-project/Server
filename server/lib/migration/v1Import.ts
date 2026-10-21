@@ -93,6 +93,7 @@ export class V1Importer {
 			// Cloned: a missing metadata key reads as a shared default object, which must not be mutated.
 			const state = structuredClone(await RuntimeMetadata.getV1ImportState());
 			const db = DB.instance();
+			let adminPasswordTakenOver = false;
 
 			// Synchronous on purpose: drizzle's bun-sqlite transaction() commits at the first `await`.
 			const work = (tx: SyncTx) => {
@@ -116,7 +117,8 @@ export class V1Importer {
 							continue;
 						}
 
-						if (this.neverLoggedIn(tx, existing)) {
+						if (this.passwordNeverSet(tx, existing)) {
+							adminPasswordTakenOver = true;
 							tx
 								.update(DB.Tables.users)
 								.set({ password_hash: v1.password_hash, role })
@@ -254,7 +256,8 @@ export class V1Importer {
 			} else {
 				db.transaction((tx) => work(tx));
 
-				if (report.users.merged.length > 0 && options.configBaseDir) {
+				// The initial admin now has the v1 password; its password-reset link is void.
+				if (adminPasswordTakenOver && options.configBaseDir) {
 					const tokenFile = join(options.configBaseDir, "initial_admin_password_reset_token.txt");
 					if (existsSync(tokenFile)) rmSync(tokenFile);
 				}
@@ -271,8 +274,19 @@ export class V1Importer {
 		return user.username === "admin" && user.display_name === "Default Administrator";
 	}
 
-	private static neverLoggedIn(tx: SyncTx, user: DB.Models.User) {
-		return !tx.select().from(DB.Tables.sessions).where(eq(DB.Tables.sessions.user_id, user.id)).get();
+	/**
+	 * The initial admin whose password nobody has set yet: its password-reset link (from DB.init)
+	 * is still unused. Only then does it take over the v1 admin's password.
+	 */
+	private static passwordNeverSet(tx: SyncTx, user: DB.Models.User) {
+		return (
+			this.isInitialAdmin(user) &&
+			!!tx
+				.select()
+				.from(DB.Tables.passwordResets)
+				.where(eq(DB.Tables.passwordResets.user_id, user.id))
+				.get()
+		);
 	}
 
 	private static agentOwner(tx: SyncTx, agentID: number) {

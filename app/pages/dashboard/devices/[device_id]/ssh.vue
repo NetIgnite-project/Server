@@ -178,7 +178,7 @@ async function copy(text: string) {
 				variant="subtle"
 				icon="i-lucide-radio-tower"
 				title="This device's agent can't log in over SSH"
-				description="SSH needs a NetIgnite Linux agent in Wake-on-LAN mode in the device's network, assigned as the device's agent (General tab), and online."
+				description="SSH needs an online agent in the device's network that can log in over SSH: an ESP32 with firmware 2.0.0-beta.2 or newer, or a Linux agent in Wake-on-LAN mode. Assign it as the device's agent (General tab)."
 			/>
 
 			<form class="space-y-5" @submit.prevent="save">

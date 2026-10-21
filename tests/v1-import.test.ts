@@ -4,6 +4,7 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { eq } from "drizzle-orm";
+import { RuntimeMetadata } from "../server/lib/api/utils/metadata";
 import { DB } from "../server/lib/db";
 import { V1Importer } from "../server/lib/migration/v1Import";
 import { makeAPIRequest } from "./helpers/api";
@@ -199,10 +200,11 @@ describe("v1 import: merging users", () => {
 			.from(DB.Tables.users)
 			.where(eq(DB.Tables.users.username, "admin"))
 			.get();
-		const adminLoggedInBefore = !!(await DB.instance()
+		// Nobody has set the initial admin's password while its reset link is unused.
+		const adminPasswordUnset = !!(await DB.instance()
 			.select()
-			.from(DB.Tables.sessions)
-			.where(eq(DB.Tables.sessions.user_id, initialAdmin!.id))
+			.from(DB.Tables.passwordResets)
+			.where(eq(DB.Tables.passwordResets.user_id, initialAdmin!.id))
 			.get());
 
 		const report = await V1Importer.run({ sourcePath: mergePath });
@@ -221,12 +223,12 @@ describe("v1 import: merging users", () => {
 			.where(eq(DB.Tables.agents.owner_id, initialAdmin!.id));
 		expect(adminAgents.map((agent) => agent.name)).toContain("Admin ESP");
 
-		// The v1 password is only taken over by an account nobody has used in v2 yet.
-		await makeAPIRequest(
-			"/v1/auth/login",
-			{ method: "POST", body: { username: "admin", password: "admin-from-v1" } },
-			adminLoggedInBefore ? 401 : 200,
-		);
+		// The v1 password is only taken over by the initial admin whose password nobody has set yet.
+		expect(adminPasswordUnset).toBe(true);
+		await makeAPIRequest("/v1/auth/login", {
+			method: "POST",
+			body: { username: "admin", password: "admin-from-v1" },
+		});
 	});
 
 	test("--merge-users merges the clash but keeps the password of a used v2 account", async () => {
@@ -241,6 +243,32 @@ describe("v1 import: merging users", () => {
 		await makeAPIRequest(
 			"/v1/auth/login",
 			{ method: "POST", body: { username: "collide", password: "collide-from-v1" } },
+			401,
+		);
+	});
+
+	test("an admin who set a password in v2 keeps it, even without a session", async () => {
+		const admin = await DB.instance()
+			.select()
+			.from(DB.Tables.users)
+			.where(eq(DB.Tables.users.username, "admin"))
+			.get();
+		await DB.instance()
+			.update(DB.Tables.users)
+			.set({ password_hash: await Bun.password.hash("set-in-v2-Passw0rd!") })
+			.where(eq(DB.Tables.users.id, admin!.id));
+		await DB.instance().delete(DB.Tables.sessions).where(eq(DB.Tables.sessions.user_id, admin!.id));
+		await RuntimeMetadata.setV1ImportState({ users: {}, agents: {}, devices: {} });
+
+		const report = await V1Importer.run({ sourcePath: mergePath });
+		expect(report.users.merged).toContain("admin");
+		await makeAPIRequest("/v1/auth/login", {
+			method: "POST",
+			body: { username: "admin", password: "set-in-v2-Passw0rd!" },
+		});
+		await makeAPIRequest(
+			"/v1/auth/login",
+			{ method: "POST", body: { username: "admin", password: "admin-from-v1" } },
 			401,
 		);
 	});

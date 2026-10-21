@@ -38,7 +38,7 @@ export namespace AdminUsersModel.Create {
 	});
 
 	export const Body = InsertSchema.extend({
-		password: z.string().min(8).max(128),
+		password: UserDataPolicies.Password,
 	});
 	export type Body = z.infer<typeof Body>;
 

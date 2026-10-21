@@ -48,12 +48,12 @@ itself when it enrolls.
 | `NETIGNITE_FIRMWARE_SYNC` | `true` | Sync automatically; `false` for offline servers |
 | `NETIGNITE_FIRMWARE_REPO` | `NetIgnite-project/Agent-ESP32` | GitHub repository to sync from |
 | `NETIGNITE_FIRMWARE_DIR` | `./data/firmware` | Where releases are stored |
-| `NETIGNITE_FIRMWARE_PUBLIC_KEY` | — | PEM ECDSA P-256 key; then only signed releases are accepted |
+| `NETIGNITE_FIRMWARE_PUBLIC_KEY` | — | Path of a PEM ECDSA P-256 public key; then only signed releases are accepted |
 | `NETIGNITE_GITHUB_TOKEN` | — | Raises GitHub's API rate limit |
 
 ### Firmware updates and console
 
-ESP32 agents with firmware 2.1 or newer update over the network: the agent page shows **Update
+ESP32 agents with firmware 2.0.0-beta.2 or newer update over the network: the agent page shows **Update
 to …** when the admin's channel has a newer release (Agents → **Update n agents** updates several
 one after another). The agent downloads the image from this server with its own credential,
 checks its SHA-256 (and signature, if its firmware has a public key compiled in), restarts and goes
@@ -67,8 +67,8 @@ address or IP setting is only kept if the agent reaches the server with it withi
 
 A device's **SSH** tab (owner only) stores an SSH login: a key pair the server generates (the tab
 shows the `authorized_keys` and `sudoers` lines for the device) or a password. The device's agent
-(a Linux agent in Wake-on-LAN mode in the same network) logs in for shutdown and reboot; it runs only
-the fixed `shutdown` commands. Passwords and private keys are stored encrypted with the server's
+(an ESP32 with firmware 2.0.0-beta.2 or newer, or a Linux agent in Wake-on-LAN mode, in the same
+network) logs in for shutdown and reboot; it runs only the fixed `shutdown` commands. Passwords and private keys are stored encrypted with the server's
 secrets key (`NETIGNITE_SECRETS_KEY`, or `config/secrets.key`; back it up) and are never returned by
 the API. The device's host key is trusted on first use: test the login, compare the fingerprint,
 trust it.

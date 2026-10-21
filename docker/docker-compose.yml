@@ -20,12 +20,13 @@ services:
       # NETIGNITE_FIRMWARE_SYNC: false
       # NETIGNITE_FIRMWARE_PUBLIC_KEY: /opt/netignite/config/firmware-signing.pub.pem
 
-      NETIGNITE_SMTP_HOST: "mail.example.com"
-      NETIGNITE_SMTP_PORT: 465
-      NETIGNITE_SMTP_USERNAME: "YourSMTPUsernameHere"
-      NETIGNITE_SMTP_PASSWORD: "YourSMTPPasswordHere"
-      NETIGNITE_SMTP_FROM: '"App" <system@app.example.com>'
-      NETIGNITE_SMTP_SECURE: true
+      # Optional: email (password resets). Without it, email features are off.
+      # NETIGNITE_SMTP_HOST: "mail.example.com"
+      # NETIGNITE_SMTP_PORT: 465
+      # NETIGNITE_SMTP_USERNAME: "YourSMTPUsernameHere"
+      # NETIGNITE_SMTP_PASSWORD: "YourSMTPPasswordHere"
+      # NETIGNITE_SMTP_FROM: '"NetIgnite" <netignite@example.com>'
+      # NETIGNITE_SMTP_SECURE: true
 
     volumes:
       - ./data:/opt/netignite/data

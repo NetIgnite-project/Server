@@ -59,10 +59,7 @@ const schema = z.object({
 		.max(40, "Must be at most 40 characters")
 		.regex(/^[a-z0-9._-]+$/, "Only lowercase letters, numbers, dots, dashes and underscores"),
 	email: z.email("Invalid email address").trim(),
-	password: z
-		.string("Password is required")
-		.min(8, "Must be at least 8 characters")
-		.max(128, "Must be at most 128 characters"),
+	password: passwordRule,
 	confirm_password: z.string("Confirm Password is required").min(1, "Confirm Password is required"),
 });
 
