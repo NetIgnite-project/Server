@@ -1,6 +1,41 @@
 # Changelog
 
-## 2.0.0-beta.2 (unreleased)
+## 2.0.0 (2026-10-21)
+
+The first stable release of NetIgnite v2: the server rewritten from scratch, with new agents for
+the ESP32 (firmware 2.0.0) and for Linux (Agent-Linux 1.0.0). It includes everything from
+2.0.0-beta.1 and 2.0.0-beta.2 below.
+
+### Upgrading from v1 (0.1.x)
+
+- **The `latest` image is now v2.** A v1 server that pulls it starts v2 with an empty database next
+  to the v1 one. The v1 users, agents and devices stay in `data/db.sqlite` until you import them,
+  and the server log says so on every start. To stay on v1 for now, use
+  `ghcr.io/netignite-project/server:0.1.3`.
+- Follow the [upgrade guide](https://netignite.dev/docs/server/upgrading): back up, start v2 with
+  the same volumes plus `NETIGNITE_APP_URL`, run `import-v1`, then set up the agents again.
+- v1 agents can't connect to v2. Install the ESP32 firmware 2.0.0 once over USB with the
+  dashboard's web installer; replace v1 "server" agents with the Linux agent.
+
+### What's new since v1
+
+- Wake-on-LAN through an ESP32 or Linux agent, and status checks by MAC (IPv6 link-local), IPv4,
+  IPv6, TCP port, SSH port or the Linux agent on the device.
+- Shutdown and reboot through the Linux agent on the device (recommended), or over SSH with a login
+  restricted to these two commands.
+- Sharing devices with other users as viewer, operator or manager.
+- ESP32 web installer, firmware updates over the network with automatic rollback, and a console.
+- Linux agent with a one-line installer.
+- Installable as an app (PWA); REST API with API keys and an OpenAPI reference at `/api/docs/v1`.
+
+### Changes since 2.0.0-beta.2
+
+- On start, the server warns when it finds a v1 database (`data/db.sqlite`) that hasn't been
+  imported, with the import command.
+- The Linux agent install script installs the newest stable Agent-Linux release, and a pre-release
+  only while there is none (before: the newest release, pre-releases included).
+
+## 2.0.0-beta.2 (2026-10-21)
 
 ### New
 
@@ -24,7 +59,12 @@
 - **SSH shutdown and reboot.** A device's **SSH** tab (owner only) stores a login: an Ed25519 key
   pair the server generates (with ready-made `authorized_keys` and `sudoers` lines that allow only
   shutdown and reboot) or a password. The device's agent logs in; host keys are trusted on first
-  use. Passwords and keys are stored encrypted and never returned by the API.
+  use. Passwords and keys are stored encrypted and never returned by the API. The tab recommends
+  the Linux agent instead where it runs, asks for a dedicated user that may only shut down and
+  reboot, and warns about `root` and administrator logins (Windows, which only shuts down for
+  administrators, gets its own advice).
+- **Installable as an app (PWA):** web app manifest, icons and a service worker that only shows an
+  offline page when the server can't be reached.
 
 ### Changed
 

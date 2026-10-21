@@ -50,9 +50,12 @@ esac
 BASE="\${NETIGNITE_AGENT_BASE_URL:-}"
 if [ -z "$BASE" ]; then
 	if [ -z "$VERSION" ]; then
-		# The newest release, pre-releases included (GitHub's "latest" skips them).
-		VERSION=$(curl -fsSL "https://api.github.com/repos/$REPO/releases?per_page=1" |
-			sed -n 's/.*"tag_name": *"\\([^"]*\\)".*/\\1/p' | head -n 1)
+		# The newest stable release (GitHub's "latest" skips pre-releases); the newest pre-release
+		# only while the repository has no stable release.
+		tag_name() { sed -n 's/.*"tag_name": *"\\([^"]*\\)".*/\\1/p' | head -n 1; }
+		VERSION=$(curl -fsL "https://api.github.com/repos/$REPO/releases/latest" | tag_name)
+		[ -n "$VERSION" ] ||
+			VERSION=$(curl -fsSL "https://api.github.com/repos/$REPO/releases?per_page=1" | tag_name)
 		[ -n "$VERSION" ] || fail "couldn't find a release of $REPO"
 	fi
 	BASE="https://github.com/$REPO/releases/download/$VERSION"

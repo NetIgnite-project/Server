@@ -1,6 +1,6 @@
 import { Database } from "bun:sqlite";
 import { existsSync, rmSync } from "node:fs";
-import { join } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { eq } from "drizzle-orm";
 import { RuntimeMetadata } from "../api/utils/metadata";
 import { DeviceSettings } from "../api/utils/shared-models/netigniteData";
@@ -53,6 +53,18 @@ export type V1ImportReport = {
  */
 export class V1Importer {
 	static readonly PLACEHOLDER_EMAIL_DOMAIN = "imported.netignite.invalid";
+
+	/**
+	 * The v1 database (`db.sqlite`) next to the v2 database at `databasePath`, if it exists and
+	 * nothing was imported from it yet; otherwise null. A v1 server that pulled a v2 image starts
+	 * with an empty v2 database, and its users' data is still in that file.
+	 */
+	static async pendingV1Database(databasePath: string): Promise<string | null> {
+		const v1Path = join(dirname(databasePath), "db.sqlite");
+		if (resolve(v1Path) === resolve(databasePath) || !existsSync(v1Path)) return null;
+		const state = await RuntimeMetadata.getV1ImportState();
+		return Object.keys(state.users).length === 0 ? v1Path : null;
+	}
 
 	static async run(options: {
 		sourcePath: string;

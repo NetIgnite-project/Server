@@ -53,7 +53,7 @@ itself when it enrolls.
 
 ### Firmware updates and console
 
-ESP32 agents with firmware 2.0.0-beta.2 or newer update over the network: the agent page shows **Update
+ESP32 agents with firmware 2.0.0 or newer update over the network: the agent page shows **Update
 to …** when the admin's channel has a newer release (Agents → **Update n agents** updates several
 one after another). The agent downloads the image from this server with its own credential,
 checks its SHA-256 (and signature, if its firmware has a public key compiled in), restarts and goes
@@ -67,7 +67,7 @@ address or IP setting is only kept if the agent reaches the server with it withi
 
 A device's **SSH** tab (owner only) stores an SSH login: a key pair the server generates (the tab
 shows the `authorized_keys` and `sudoers` lines for the device) or a password. The device's agent
-(an ESP32 with firmware 2.0.0-beta.2 or newer, or a Linux agent in Wake-on-LAN mode, in the same
+(an ESP32 with firmware 2.0.0 or newer, or a Linux agent in Wake-on-LAN mode, in the same
 network) logs in for shutdown and reboot; it runs only the fixed `shutdown` commands. Passwords and private keys are stored encrypted with the server's
 secrets key (`NETIGNITE_SECRETS_KEY`, or `config/secrets.key`; back it up) and are never returned by
 the API. The device's host key is trusted on first use: test the login, compare the fingerprint,
@@ -92,9 +92,9 @@ curl -fsSL https://<server>/install/linux.sh | sudo sh -s -- <enrollment-token>
 ```
 
 `/install/linux.sh` downloads the agent from the [Agent-Linux](https://github.com/NetIgnite-project/Agent-Linux)
-releases (`NETIGNITE_LINUX_AGENT_REPO`; the newest release, pre-releases included, or the tag in
-`NETIGNITE_LINUX_AGENT_VERSION`), checks it against `SHA256SUMS`, pairs it and installs the
-systemd service.
+releases (`NETIGNITE_LINUX_AGENT_REPO`; the newest stable release, a pre-release only while there
+is none, or the tag in `NETIGNITE_LINUX_AGENT_VERSION`), checks it against `SHA256SUMS`, pairs it
+and installs the systemd service.
 
 ### Upgrading from v1
 

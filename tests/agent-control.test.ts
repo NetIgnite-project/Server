@@ -572,4 +572,47 @@ describe("Linux agent setup", () => {
 			expect(check.exitCode).toBe(0);
 		}
 	});
+
+	test("the install script takes the newest stable release, a pre-release only without one", async () => {
+		const sh = Bun.which("sh");
+		if (!sh) return;
+		const script = LinuxInstaller.script({
+			serverURL: "https://netignite.example",
+			repo: "Example/Agent-Linux",
+			version: null,
+		});
+		// Only the release lookup: the rest of the script needs root and systemd.
+		const lookup = script.match(/\tif \[ -z "\$VERSION" \]; then\n[\s\S]*?\n\tfi\n/)?.[0];
+		expect(lookup).toBeDefined();
+
+		// A fake curl: /releases/latest answers with $STABLE or 404s, the release list with a beta.
+		const bin = path.join(firmwareDir, "fake-bin");
+		const curl = path.join(bin, "curl");
+		await Bun.write(
+			curl,
+			[
+				"#!/bin/sh",
+				'case "$*" in',
+				'*releases/latest*) [ -n "$STABLE" ] || exit 22; echo "{\\"tag_name\\": \\"$STABLE\\"}" ;;',
+				'*) echo "{\\"tag_name\\": \\"v1.1.0-beta.1\\"}" ;;',
+				"esac",
+				"",
+			].join("\n"),
+		);
+		await fs.chmod(curl, 0o755);
+
+		const pick = (stable: string) =>
+			Bun.spawnSync(
+				[
+					sh,
+					"-c",
+					`set -eu\nfail() { echo "$*" >&2; exit 1; }\nREPO=Example/Agent-Linux\nVERSION=\n${lookup}echo "$VERSION"`,
+				],
+				{ env: { ...process.env, PATH: `${bin}${path.delimiter}${process.env.PATH}`, STABLE: stable } },
+			)
+				.stdout.toString()
+				.trim();
+		expect(pick("v1.0.0")).toBe("v1.0.0");
+		expect(pick("")).toBe("v1.1.0-beta.1");
+	});
 });

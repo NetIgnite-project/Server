@@ -147,7 +147,7 @@ export class ConfigHandler {
 
 		// The Linux agent's install script (/install/linux.sh) downloads the agent from the GitHub
 		// releases of LINUX_AGENT_REPO: the release tagged LINUX_AGENT_VERSION (e.g. v1.0.0), or the
-		// newest release, pre-releases included.
+		// newest stable release (a pre-release only while the repository has no stable release).
 		LINUX_AGENT_REPO: CS.string().default("NetIgnite-project/Agent-Linux"),
 		LINUX_AGENT_VERSION: CS.string().optional(),
 

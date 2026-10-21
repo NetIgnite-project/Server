@@ -79,6 +79,11 @@ afterAll(() => {
 });
 
 describe("v1 import", () => {
+	test("a v1 database next to the v2 one is reported until something is imported", async () => {
+		expect(await V1Importer.pendingV1Database(join(dir, "netignite.sqlite"))).toBe(v1Path);
+		expect(await V1Importer.pendingV1Database(join(dir, "elsewhere", "netignite.sqlite"))).toBeNull();
+	});
+
 	test("a dry run changes nothing", async () => {
 		const report = await V1Importer.run({ sourcePath: v1Path, dryRun: true });
 		expect(report.users.imported).toEqual(["v1alice", "v1bobby"]);
@@ -136,6 +141,10 @@ describe("v1 import", () => {
 			.where(eq(DB.Tables.devices.name, "Bob NAS"))
 			.get();
 		expect(nas).toMatchObject({ agent_id: null, status_method: "link_local", wol_port: 7 });
+	});
+
+	test("an imported v1 database isn't reported anymore", async () => {
+		expect(await V1Importer.pendingV1Database(join(dir, "netignite.sqlite"))).toBeNull();
 	});
 
 	test("running it again imports nothing twice", async () => {

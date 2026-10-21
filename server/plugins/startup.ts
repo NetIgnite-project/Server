@@ -7,6 +7,7 @@ import { DB } from "../lib/db";
 import { DeviceStatusService } from "../lib/devices/status";
 import { FirmwareCatalog } from "../lib/firmware/catalog";
 import { OtaService } from "../lib/firmware/ota";
+import { V1Importer } from "../lib/migration/v1Import";
 import { TaskScheduler } from "../lib/tasks";
 import { Utils } from "../lib/utils";
 import { ConfigHandler } from "../lib/utils/config";
@@ -88,6 +89,17 @@ export default defineNitroPlugin(async (nitroApp) => {
 		config.CONFIG_BASE_DIR,
 		config.DB_MIGRATION_DIR,
 	);
+
+	const v1Database = await V1Importer.pendingV1Database(config.DB_PATH);
+	if (v1Database) {
+		Logger.warn(
+			`Found a NetIgnite v1 database at ${v1Database} that hasn't been imported: its users, ` +
+				"agents and devices are still in it, not in this server. Import it:\n" +
+				`  Docker:      docker exec <container> bun /opt/netignite/app/.output/import-v1.mjs --from ${v1Database}\n` +
+				`  From source: bun scripts/import-v1.ts --from ${v1Database}\n` +
+				"Guide: https://netignite.dev/docs/server/upgrading (move the file away to hide this warning)",
+		);
+	}
 
 	await Utils.ensureDirectoryExists(config.LOG_DIR ?? "./data/logs");
 
