@@ -34,7 +34,8 @@ export const StatusMethods: Record<
 	ipv6: { label: "IPv6 address", description: "The agent pings the device's IPv6 address." },
 	ssh: {
 		label: "SSH port",
-		description: "The agent checks whether the SSH port (22, or the port below) accepts connections.",
+		description:
+			"The agent checks whether the SSH port (22, or the port below) accepts connections. With an SSH login (SSH tab), it can also shut the device down and reboot it.",
 	},
 	host_agent: {
 		label: "Linux agent on the device",

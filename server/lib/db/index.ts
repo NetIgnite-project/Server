@@ -146,6 +146,7 @@ export namespace DB.Tables {
 	export const deviceShares = TableSchema.deviceShares;
 	export const deviceFavorites = TableSchema.deviceFavorites;
 	export const firmwareReleases = TableSchema.firmwareReleases;
+	export const deviceSshCredentials = TableSchema.deviceSshCredentials;
 }
 
 export namespace DB.Models {
@@ -167,4 +168,5 @@ export namespace DB.Models {
 	export type DeviceShare = typeof DB.Tables.deviceShares.$inferSelect;
 	export type DeviceFavorite = typeof DB.Tables.deviceFavorites.$inferSelect;
 	export type FirmwareRelease = typeof DB.Tables.firmwareReleases.$inferSelect;
+	export type DeviceSshCredential = typeof DB.Tables.deviceSshCredentials.$inferSelect;
 }

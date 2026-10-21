@@ -3,10 +3,12 @@ import type { Context } from "hono";
 import { Hono } from "hono";
 import { validator } from "hono-openapi";
 import z from "zod";
+import { AgentRequestError } from "../../../../../agents/connection";
 import { DB } from "../../../../../db";
 import { DeviceActionError, DeviceActions } from "../../../../../devices/actions";
 import { DevicePermissions } from "../../../../../devices/permissions";
 import { DeviceStatusService } from "../../../../../devices/status";
+import { SshCredentialError, SshCredentials } from "../../../../../ssh/credentials";
 import { APIResponse } from "../../../../utils/api-res";
 import { APIResponseSpec, APIRouteSpec } from "../../../../utils/specHelpers";
 import { DOCS_TAGS } from "../../docs";
@@ -55,6 +57,7 @@ async function toDeviceResponses(userID: number, devices: DevicePermissions.Devi
 	const agents = await getAgentSummaries(
 		devices.flatMap((device) => [device.agent_id, device.host_agent_id]),
 	);
+	const sshTrusted = SshCredentials.trustedDeviceIDs(devices.map((device) => device.id));
 	const favorites = new Set(
 		(
 			await DB.instance()
@@ -89,7 +92,7 @@ async function toDeviceResponses(userID: number, devices: DevicePermissions.Devi
 			favorite: favorites.has(device.id),
 			status: DeviceStatusService.get(device.id),
 			actions: DevicePermissions.can(device.access_role, "power")
-				? DeviceActions.availableActions(device)
+				? DeviceActions.availableActions(device, sshTrusted.has(device.id))
 				: { power_on: false, shutdown: false, reboot: false },
 		}),
 	);
@@ -372,14 +375,14 @@ powerRoute(
 powerRoute(
 	"shutdown",
 	"Shut down a device",
-	"Shuts the device down through the Linux agent running on it.",
+	"Shuts the device down through the Linux agent running on it, or over SSH through its agent.",
 	(device) => DeviceActions.hostControl(device, "shutdown"),
 	"Shutdown requested",
 );
 powerRoute(
 	"reboot",
 	"Reboot a device",
-	"Reboots the device through the Linux agent running on it.",
+	"Reboots the device through the Linux agent running on it, or over SSH through its agent.",
 	(device) => DeviceActions.hostControl(device, "reboot"),
 	"Reboot requested",
 );
@@ -634,5 +637,202 @@ router.delete(
 			);
 
 		return APIResponse.successNoData(c, "Share removed");
+	},
+);
+
+// --- SSH login (owner only) ---------------------------------------------------------------------
+
+function toSshResponse(device: DB.Models.Device): DevicesModel.Ssh.Response {
+	const credential = SshCredentials.get(device.id);
+	const agentReady = SshCredentials.agentFor(device) !== null;
+	if (!credential) {
+		return {
+			configured: false,
+			host: null,
+			effective_host: device.status_address,
+			port: null,
+			username: null,
+			auth_type: null,
+			os: null,
+			sudo: null,
+			public_key: null,
+			host_key: null,
+			authorized_keys: null,
+			sudoers: null,
+			agent_ready: agentReady,
+		};
+	}
+	return {
+		configured: true,
+		host: credential.host,
+		effective_host: SshCredentials.host(device, credential),
+		port: credential.port,
+		username: credential.username,
+		auth_type: credential.auth_type,
+		os: credential.os,
+		sudo: credential.sudo,
+		public_key: credential.public_key,
+		host_key: credential.host_key,
+		...SshCredentials.setupHints(credential),
+		agent_ready: agentReady,
+	};
+}
+
+router.get(
+	"/:deviceID/ssh",
+
+	APIRouteSpec.authenticated({
+		summary: "Get a device's SSH login",
+		description: "The SSH login without its password or private key. Owner only.",
+		tags: [DOCS_TAGS.DEVICES],
+		responses: APIResponseSpec.describeBasic(
+			APIResponseSpec.success("SSH login retrieved", DevicesModel.Ssh.Response),
+			APIResponseSpec.forbidden("Only the device's owner can do this"),
+			APIResponseSpec.notFound("Device not found"),
+		),
+	}),
+
+	async (c) => {
+		const device = getDevice(c);
+		if (!DevicePermissions.can(device.access_role, "manage")) return forbidden(c, "manage");
+		return APIResponse.success(c, "SSH login retrieved", toSshResponse(device));
+	},
+);
+
+router.put(
+	"/:deviceID/ssh",
+
+	APIRouteSpec.authenticated({
+		summary: "Set a device's SSH login",
+		description:
+			"Stores the login the device's agent uses for shutdown and reboot over SSH. With " +
+			'`auth: { type: "generate_key" }` the server creates an Ed25519 key pair and returns the public key ' +
+			"for the device's authorized_keys. Changing host or port un-trusts the host key.",
+		tags: [DOCS_TAGS.DEVICES],
+		responses: APIResponseSpec.describeWithWrongInputs(
+			APIResponseSpec.success("SSH login saved", DevicesModel.Ssh.Response),
+			APIResponseSpec.forbidden("Only the device's owner can do this"),
+			APIResponseSpec.notFound("Device not found"),
+		),
+	}),
+
+	validator("json", DevicesModel.Ssh.Body),
+
+	async (c) => {
+		const device = getDevice(c);
+		if (!DevicePermissions.can(device.access_role, "manage")) return forbidden(c, "manage");
+
+		const body = c.req.valid("json");
+		if (!body.host && !device.status_address) {
+			return APIResponse.badRequest(c, "Enter the device's host name or IP address");
+		}
+		try {
+			SshCredentials.save(device, body);
+		} catch (error) {
+			if (error instanceof SshCredentialError) return APIResponse.badRequest(c, error.message);
+			throw error;
+		}
+		return APIResponse.success(c, "SSH login saved", toSshResponse(device));
+	},
+);
+
+router.delete(
+	"/:deviceID/ssh",
+
+	APIRouteSpec.authenticated({
+		summary: "Remove a device's SSH login",
+		tags: [DOCS_TAGS.DEVICES],
+		responses: APIResponseSpec.describeBasic(
+			APIResponseSpec.successNoData("SSH login removed"),
+			APIResponseSpec.forbidden("Only the device's owner can do this"),
+			APIResponseSpec.notFound("Device not found"),
+		),
+	}),
+
+	async (c) => {
+		const device = getDevice(c);
+		if (!DevicePermissions.can(device.access_role, "manage")) return forbidden(c, "manage");
+		SshCredentials.delete(device.id);
+		return APIResponse.successNoData(c, "SSH login removed");
+	},
+);
+
+router.post(
+	"/:deviceID/ssh/test",
+
+	APIRouteSpec.authenticated({
+		summary: "Test a device's SSH login",
+		description:
+			"The device's agent logs in (without running anything) and reports the device's host key " +
+			"fingerprint. Trust it with `POST /ssh/trust` to allow shutdown and reboot.",
+		tags: [DOCS_TAGS.DEVICES],
+		responses: APIResponseSpec.describeBasic(
+			APIResponseSpec.success("SSH login tested", DevicesModel.Ssh.TestResponse),
+			APIResponseSpec.forbidden("Only the device's owner can do this"),
+			APIResponseSpec.notFound("Device or SSH login not found"),
+			APIResponseSpec.conflict("The device's agent can't log in over SSH"),
+			APIResponseSpec.serviceUnavailable("The agent is offline"),
+			APIResponseSpec.gatewayTimeout("The agent didn't answer in time"),
+		),
+	}),
+
+	async (c) => {
+		const device = getDevice(c);
+		if (!DevicePermissions.can(device.access_role, "manage")) return forbidden(c, "manage");
+
+		const credential = SshCredentials.get(device.id);
+		const target = credential ? SshCredentials.target(device, credential) : null;
+		if (!credential || !target) return APIResponse.notFound(c, "SSH login not found");
+
+		const agent = SshCredentials.agentFor(device);
+		if (!agent) {
+			return device.agent_id === null
+				? APIResponse.conflict(c, "No agent is assigned to this device")
+				: APIResponse.serviceUnavailable(c, "The device's agent is offline or can't log in over SSH");
+		}
+
+		try {
+			const result = await agent.request("SSH_CHECK", target, 10_000);
+			return APIResponse.success(c, "SSH login tested", {
+				online: result.online,
+				authenticated: result.authenticated ?? false,
+				host_key: result.host_key ?? null,
+				trusted: !!result.host_key && result.host_key === credential.host_key,
+				error: result.error ?? null,
+			} satisfies DevicesModel.Ssh.TestResponse);
+		} catch (error) {
+			if (!(error instanceof AgentRequestError)) throw error;
+			if (error.reason === "timeout")
+				return APIResponse.gatewayTimeout(c, "The agent didn't answer in time");
+			if (error.reason === "offline") return APIResponse.serviceUnavailable(c, "The agent is offline");
+			return APIResponse.badGateway(c, error.message);
+		}
+	},
+);
+
+router.post(
+	"/:deviceID/ssh/trust",
+
+	APIRouteSpec.authenticated({
+		summary: "Trust a device's SSH host key",
+		description:
+			"Stores the fingerprint from a test login. Logins to another host key fail from then on.",
+		tags: [DOCS_TAGS.DEVICES],
+		responses: APIResponseSpec.describeWithWrongInputs(
+			APIResponseSpec.success("Host key trusted", DevicesModel.Ssh.Response),
+			APIResponseSpec.forbidden("Only the device's owner can do this"),
+			APIResponseSpec.notFound("Device or SSH login not found"),
+		),
+	}),
+
+	validator("json", DevicesModel.Ssh.TrustBody),
+
+	async (c) => {
+		const device = getDevice(c);
+		if (!DevicePermissions.can(device.access_role, "manage")) return forbidden(c, "manage");
+		if (!SshCredentials.get(device.id)) return APIResponse.notFound(c, "SSH login not found");
+
+		SshCredentials.trust(device.id, c.req.valid("json").host_key);
+		return APIResponse.success(c, "Host key trusted", toSshResponse(device));
 	},
 );

@@ -63,6 +63,16 @@ The agent's **Console** tab shows its live log (WebSocket `/ws/console`) and cha
 level, server address, host name and IP settings, restarts or factory-resets it. A new server
 address or IP setting is only kept if the agent reaches the server with it within 2 minutes.
 
+### SSH shutdown and reboot
+
+A device's **SSH** tab (owner only) stores an SSH login: a key pair the server generates (the tab
+shows the `authorized_keys` and `sudoers` lines for the device) or a password. The device's agent
+(a Linux agent in Wake-on-LAN mode in the same network) logs in for shutdown and reboot; it runs only
+the fixed `shutdown` commands. Passwords and private keys are stored encrypted with the server's
+secrets key (`NETIGNITE_SECRETS_KEY`, or `config/secrets.key`; back it up) and are never returned by
+the API. The device's host key is trusted on first use: test the login, compare the fingerprint,
+trust it.
+
 ### Linux agent
 
 The page of a Linux agent shows a one-line installer:
@@ -128,6 +138,7 @@ bun run api-client:generate
 | --- | --- |
 | `server/lib/agents/` | Agent protocol, credentials, gateway, live connection registry, console relay, Linux install script |
 | `server/lib/devices/` | Device permissions (sharing roles), status polling, power actions |
+| `server/lib/ssh/` | SSH logins of devices (encrypted secrets, generated Ed25519 keys, host key trust) |
 | `server/lib/firmware/` | Firmware catalog (GitHub release sync), NVS image writer for the web installer, OTA updates |
 | `server/lib/api/versions/v1/routes/` | REST routes (`agents`, `devices`, `firmware`, `auth`, `account`, `admin`) |
 | `server/lib/migration/v1Import.ts` | v1 database import |

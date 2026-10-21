@@ -40,6 +40,16 @@ export namespace DeviceSettings {
 		.transform((mac) => mac.toUpperCase().replaceAll("-", ":"));
 
 	export const WolPort = z.number().int().min(1).max(65535);
+
+	/** `password`, or `key`: an Ed25519 key pair the server generated. */
+	export const SshAuthTypes = ["password", "key"] as const;
+	export const SshAuthType = z.enum(SshAuthTypes);
+	export type SshAuthType = z.infer<typeof SshAuthType>;
+
+	/** Which shutdown command the agent runs: `shutdown -h now` (POSIX) or `shutdown /s /t 0`. */
+	export const SshOperatingSystems = ["posix", "windows"] as const;
+	export const SshOperatingSystem = z.enum(SshOperatingSystems);
+	export type SshOperatingSystem = z.infer<typeof SshOperatingSystem>;
 }
 
 export namespace ShareSettings {

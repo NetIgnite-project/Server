@@ -41,6 +41,8 @@ export namespace AgentProtocol {
 		// REBOOT, FACTORY_RESET
 		"device.reboot",
 		"device.reset",
+		// SSH_CHECK, SSH_EXEC (logs into devices in the agent's network)
+		"ssh",
 	] as const;
 	export type Capability = (typeof Capabilities)[number];
 
@@ -62,6 +64,27 @@ export namespace AgentProtocol {
 	export type OtaProgressEvent = z.infer<typeof OtaProgressEvent>;
 
 	export type LogLevel = "error" | "warn" | "info" | "debug";
+
+	/**
+	 * An SSH login for SSH_CHECK / SSH_EXEC. `host_key`: the trusted fingerprint (`SHA256:…`); the
+	 * agent aborts before sending credentials if the server's key differs.
+	 */
+	export type SshTarget = {
+		host: string;
+		port: number;
+		username: string;
+		auth: { type: "password"; password: string } | { type: "key"; private_key: string };
+		host_key: string | null;
+	};
+
+	export type SshCheckResult = {
+		/** Whether the SSH port accepted the connection. */
+		online: boolean;
+		host_key?: string;
+		authenticated?: boolean;
+		/** `host_key_mismatch`, `auth_failed` or a short message. */
+		error?: string;
+	};
 
 	/** CONFIG_SET: only the fields present change. Server URL and IP changes are tried first. */
 	export type ConfigSet = {
@@ -162,6 +185,21 @@ export namespace AgentProtocol {
 		REBOOT: { req: Record<string, never>; res: Record<string, never> };
 		/** Erase Wi-Fi, server and credential, then restart. The agent has to be set up again. */
 		FACTORY_RESET: { req: Record<string, never>; res: Record<string, never> };
+		/** Log in over SSH without opening a session (forced commands never run). */
+		SSH_CHECK: { req: SshTarget; res: SshCheckResult };
+		/**
+		 * Log in (only with a trusted host key) and run the fixed shutdown or reboot command for the
+		 * OS: `[sudo -n ]shutdown -h|-r now`, or `shutdown /s|/r /t 0`.
+		 */
+		SSH_EXEC: {
+			req: SshTarget & {
+				host_key: string;
+				action: "shutdown" | "reboot";
+				os: "posix" | "windows";
+				sudo: boolean;
+			};
+			res: Record<string, never>;
+		};
 	}
 	export type Command = keyof Commands;
 
@@ -189,6 +227,9 @@ export namespace AgentProtocol {
 				return "device.reboot";
 			case "FACTORY_RESET":
 				return "device.reset";
+			case "SSH_CHECK":
+			case "SSH_EXEC":
+				return "ssh";
 			case "STATUS": {
 				const { target } = payload as Commands["STATUS"]["req"];
 				if (target.type === "link_local") return "status.link_local";

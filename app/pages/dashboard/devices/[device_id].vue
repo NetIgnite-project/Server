@@ -97,6 +97,17 @@ function getRoutesConfig(): UseSubrouterPathDynamics.RoutesConfig {
 				};
 			},
 		};
+		routes[`${base}/ssh`] = {
+			isNavLink: true,
+			label: "SSH",
+			icon: "i-lucide-key-square",
+			getDynamicValues() {
+				return {
+					seoSettings: { title: `SSH · ${name}`, description: `SSH login of ${name}` },
+					breadcrumbItems: [{ label: name, to: base }, { label: "SSH" }],
+				};
+			},
+		};
 	}
 
 	return routes;

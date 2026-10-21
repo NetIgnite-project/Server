@@ -3,7 +3,7 @@
 
 import type { Client, ClientMeta, Composable, Options as Options2, RequestResult, TDataShape } from './client';
 import { client } from './client.gen';
-import type { DeleteAccountApikeysByApiKeyIdData, DeleteAccountApikeysByApiKeyIdError, DeleteAccountApikeysByApiKeyIdResponse, DeleteAccountData, DeleteAccountError, DeleteAccountResponse, DeleteAdminUsersByUserIdData, DeleteAdminUsersByUserIdError, DeleteAdminUsersByUserIdResponse, DeleteAgentsByAgentIdData, DeleteAgentsByAgentIdError, DeleteAgentsByAgentIdResponse, DeleteDevicesByDeviceIdData, DeleteDevicesByDeviceIdError, DeleteDevicesByDeviceIdFavoriteData, DeleteDevicesByDeviceIdFavoriteError, DeleteDevicesByDeviceIdFavoriteResponse, DeleteDevicesByDeviceIdResponse, DeleteDevicesByDeviceIdSharesByUserIdData, DeleteDevicesByDeviceIdSharesByUserIdError, DeleteDevicesByDeviceIdSharesByUserIdResponse, GetAccountApikeysByApiKeyIdData, GetAccountApikeysByApiKeyIdError, GetAccountApikeysByApiKeyIdResponse, GetAccountApikeysData, GetAccountApikeysResponse, GetAccountData, GetAccountError, GetAccountPreferencesData, GetAccountPreferencesOnboardingData, GetAccountPreferencesOnboardingResponse, GetAccountPreferencesResponse, GetAccountResponse, GetAdminFirmwareData, GetAdminFirmwareResponse, GetAdminSettingsData, GetAdminSettingsResponse, GetAdminUsersByUserIdData, GetAdminUsersByUserIdError, GetAdminUsersByUserIdResponse, GetAdminUsersData, GetAdminUsersError, GetAdminUsersResponse, GetAgentsByAgentIdData, GetAgentsByAgentIdError, GetAgentsByAgentIdInfoData, GetAgentsByAgentIdInfoError, GetAgentsByAgentIdInfoResponse, GetAgentsByAgentIdLogsData, GetAgentsByAgentIdLogsError, GetAgentsByAgentIdLogsResponse, GetAgentsByAgentIdResponse, GetAgentsData, GetAgentsResponse, GetAuthRegistrationData, GetAuthRegistrationResponse, GetAuthSessionData, GetAuthSessionError, GetAuthSessionResponse, GetDevicesByDeviceIdData, GetDevicesByDeviceIdError, GetDevicesByDeviceIdResponse, GetDevicesByDeviceIdSharesData, GetDevicesByDeviceIdSharesError, GetDevicesByDeviceIdSharesResponse, GetDevicesData, GetDevicesResponse, GetFirmwareByVersionFilesByFileData, GetFirmwareByVersionFilesByFileError, GetFirmwareByVersionFilesByFileResponse, GetFirmwareData, GetFirmwareResponse, PostAccountApikeysData, PostAccountApikeysError, PostAccountApikeysResponse, PostAdminFirmwareSyncData, PostAdminFirmwareSyncError, PostAdminFirmwareSyncResponse, PostAdminUsersData, PostAdminUsersError, PostAdminUsersResponse, PostAgentsBulkUpdateData, PostAgentsBulkUpdateError, PostAgentsBulkUpdateResponse, PostAgentsByAgentIdEnrollmentsData, PostAgentsByAgentIdEnrollmentsError, PostAgentsByAgentIdEnrollmentsResponse, PostAgentsByAgentIdFactoryResetData, PostAgentsByAgentIdFactoryResetError, PostAgentsByAgentIdFactoryResetResponse, PostAgentsByAgentIdFlashImageData, PostAgentsByAgentIdFlashImageError, PostAgentsByAgentIdFlashImageResponse, PostAgentsByAgentIdRebootData, PostAgentsByAgentIdRebootError, PostAgentsByAgentIdRebootResponse, PostAgentsByAgentIdRevokeData, PostAgentsByAgentIdRevokeError, PostAgentsByAgentIdRevokeResponse, PostAgentsByAgentIdUpdateData, PostAgentsByAgentIdUpdateError, PostAgentsByAgentIdUpdateResponse, PostAgentsData, PostAgentsEnrollData, PostAgentsEnrollError, PostAgentsEnrollResponse, PostAgentsError, PostAgentsResponse, PostAuthLoginData, PostAuthLoginError, PostAuthLoginResponse, PostAuthLogoutData, PostAuthLogoutError, PostAuthLogoutResponse, PostAuthResetPasswordData, PostAuthResetPasswordError, PostAuthResetPasswordRequestData, PostAuthResetPasswordRequestError, PostAuthResetPasswordRequestResponse, PostAuthResetPasswordResponse, PostAuthSignupData, PostAuthSignupError, PostAuthSignupResponse, PostDevicesByDeviceIdPowerOnData, PostDevicesByDeviceIdPowerOnError, PostDevicesByDeviceIdPowerOnResponse, PostDevicesByDeviceIdRebootData, PostDevicesByDeviceIdRebootError, PostDevicesByDeviceIdRebootResponse, PostDevicesByDeviceIdSharesData, PostDevicesByDeviceIdSharesError, PostDevicesByDeviceIdSharesResponse, PostDevicesByDeviceIdShutdownData, PostDevicesByDeviceIdShutdownError, PostDevicesByDeviceIdShutdownResponse, PostDevicesByDeviceIdStatusData, PostDevicesByDeviceIdStatusError, PostDevicesByDeviceIdStatusResponse, PostDevicesData, PostDevicesError, PostDevicesResponse, PutAccountData, PutAccountError, PutAccountPasswordData, PutAccountPasswordError, PutAccountPasswordResponse, PutAccountPreferencesOnboardingData, PutAccountPreferencesOnboardingError, PutAccountPreferencesOnboardingResponse, PutAccountResponse, PutAdminSettingsData, PutAdminSettingsError, PutAdminSettingsResponse, PutAdminUsersByUserIdData, PutAdminUsersByUserIdError, PutAdminUsersByUserIdPasswordData, PutAdminUsersByUserIdPasswordError, PutAdminUsersByUserIdPasswordResponse, PutAdminUsersByUserIdResponse, PutAgentsByAgentIdData, PutAgentsByAgentIdDeviceConfigData, PutAgentsByAgentIdDeviceConfigError, PutAgentsByAgentIdDeviceConfigResponse, PutAgentsByAgentIdError, PutAgentsByAgentIdResponse, PutDevicesByDeviceIdData, PutDevicesByDeviceIdError, PutDevicesByDeviceIdFavoriteData, PutDevicesByDeviceIdFavoriteError, PutDevicesByDeviceIdFavoriteResponse, PutDevicesByDeviceIdResponse, PutDevicesByDeviceIdSharesByUserIdData, PutDevicesByDeviceIdSharesByUserIdError, PutDevicesByDeviceIdSharesByUserIdResponse } from './types.gen';
+import type { DeleteAccountApikeysByApiKeyIdData, DeleteAccountApikeysByApiKeyIdError, DeleteAccountApikeysByApiKeyIdResponse, DeleteAccountData, DeleteAccountError, DeleteAccountResponse, DeleteAdminUsersByUserIdData, DeleteAdminUsersByUserIdError, DeleteAdminUsersByUserIdResponse, DeleteAgentsByAgentIdData, DeleteAgentsByAgentIdError, DeleteAgentsByAgentIdResponse, DeleteDevicesByDeviceIdData, DeleteDevicesByDeviceIdError, DeleteDevicesByDeviceIdFavoriteData, DeleteDevicesByDeviceIdFavoriteError, DeleteDevicesByDeviceIdFavoriteResponse, DeleteDevicesByDeviceIdResponse, DeleteDevicesByDeviceIdSharesByUserIdData, DeleteDevicesByDeviceIdSharesByUserIdError, DeleteDevicesByDeviceIdSharesByUserIdResponse, DeleteDevicesByDeviceIdSshData, DeleteDevicesByDeviceIdSshError, DeleteDevicesByDeviceIdSshResponse, GetAccountApikeysByApiKeyIdData, GetAccountApikeysByApiKeyIdError, GetAccountApikeysByApiKeyIdResponse, GetAccountApikeysData, GetAccountApikeysResponse, GetAccountData, GetAccountError, GetAccountPreferencesData, GetAccountPreferencesOnboardingData, GetAccountPreferencesOnboardingResponse, GetAccountPreferencesResponse, GetAccountResponse, GetAdminFirmwareData, GetAdminFirmwareResponse, GetAdminSettingsData, GetAdminSettingsResponse, GetAdminUsersByUserIdData, GetAdminUsersByUserIdError, GetAdminUsersByUserIdResponse, GetAdminUsersData, GetAdminUsersError, GetAdminUsersResponse, GetAgentsByAgentIdData, GetAgentsByAgentIdError, GetAgentsByAgentIdInfoData, GetAgentsByAgentIdInfoError, GetAgentsByAgentIdInfoResponse, GetAgentsByAgentIdLogsData, GetAgentsByAgentIdLogsError, GetAgentsByAgentIdLogsResponse, GetAgentsByAgentIdResponse, GetAgentsData, GetAgentsResponse, GetAuthRegistrationData, GetAuthRegistrationResponse, GetAuthSessionData, GetAuthSessionError, GetAuthSessionResponse, GetDevicesByDeviceIdData, GetDevicesByDeviceIdError, GetDevicesByDeviceIdResponse, GetDevicesByDeviceIdSharesData, GetDevicesByDeviceIdSharesError, GetDevicesByDeviceIdSharesResponse, GetDevicesByDeviceIdSshData, GetDevicesByDeviceIdSshError, GetDevicesByDeviceIdSshResponse, GetDevicesData, GetDevicesResponse, GetFirmwareByVersionFilesByFileData, GetFirmwareByVersionFilesByFileError, GetFirmwareByVersionFilesByFileResponse, GetFirmwareData, GetFirmwareResponse, PostAccountApikeysData, PostAccountApikeysError, PostAccountApikeysResponse, PostAdminFirmwareSyncData, PostAdminFirmwareSyncError, PostAdminFirmwareSyncResponse, PostAdminUsersData, PostAdminUsersError, PostAdminUsersResponse, PostAgentsBulkUpdateData, PostAgentsBulkUpdateError, PostAgentsBulkUpdateResponse, PostAgentsByAgentIdEnrollmentsData, PostAgentsByAgentIdEnrollmentsError, PostAgentsByAgentIdEnrollmentsResponse, PostAgentsByAgentIdFactoryResetData, PostAgentsByAgentIdFactoryResetError, PostAgentsByAgentIdFactoryResetResponse, PostAgentsByAgentIdFlashImageData, PostAgentsByAgentIdFlashImageError, PostAgentsByAgentIdFlashImageResponse, PostAgentsByAgentIdRebootData, PostAgentsByAgentIdRebootError, PostAgentsByAgentIdRebootResponse, PostAgentsByAgentIdRevokeData, PostAgentsByAgentIdRevokeError, PostAgentsByAgentIdRevokeResponse, PostAgentsByAgentIdUpdateData, PostAgentsByAgentIdUpdateError, PostAgentsByAgentIdUpdateResponse, PostAgentsData, PostAgentsEnrollData, PostAgentsEnrollError, PostAgentsEnrollResponse, PostAgentsError, PostAgentsResponse, PostAuthLoginData, PostAuthLoginError, PostAuthLoginResponse, PostAuthLogoutData, PostAuthLogoutError, PostAuthLogoutResponse, PostAuthResetPasswordData, PostAuthResetPasswordError, PostAuthResetPasswordRequestData, PostAuthResetPasswordRequestError, PostAuthResetPasswordRequestResponse, PostAuthResetPasswordResponse, PostAuthSignupData, PostAuthSignupError, PostAuthSignupResponse, PostDevicesByDeviceIdPowerOnData, PostDevicesByDeviceIdPowerOnError, PostDevicesByDeviceIdPowerOnResponse, PostDevicesByDeviceIdRebootData, PostDevicesByDeviceIdRebootError, PostDevicesByDeviceIdRebootResponse, PostDevicesByDeviceIdSharesData, PostDevicesByDeviceIdSharesError, PostDevicesByDeviceIdSharesResponse, PostDevicesByDeviceIdShutdownData, PostDevicesByDeviceIdShutdownError, PostDevicesByDeviceIdShutdownResponse, PostDevicesByDeviceIdSshTestData, PostDevicesByDeviceIdSshTestError, PostDevicesByDeviceIdSshTestResponse, PostDevicesByDeviceIdSshTrustData, PostDevicesByDeviceIdSshTrustError, PostDevicesByDeviceIdSshTrustResponse, PostDevicesByDeviceIdStatusData, PostDevicesByDeviceIdStatusError, PostDevicesByDeviceIdStatusResponse, PostDevicesData, PostDevicesError, PostDevicesResponse, PutAccountData, PutAccountError, PutAccountPasswordData, PutAccountPasswordError, PutAccountPasswordResponse, PutAccountPreferencesOnboardingData, PutAccountPreferencesOnboardingError, PutAccountPreferencesOnboardingResponse, PutAccountResponse, PutAdminSettingsData, PutAdminSettingsError, PutAdminSettingsResponse, PutAdminUsersByUserIdData, PutAdminUsersByUserIdError, PutAdminUsersByUserIdPasswordData, PutAdminUsersByUserIdPasswordError, PutAdminUsersByUserIdPasswordResponse, PutAdminUsersByUserIdResponse, PutAgentsByAgentIdData, PutAgentsByAgentIdDeviceConfigData, PutAgentsByAgentIdDeviceConfigError, PutAgentsByAgentIdDeviceConfigResponse, PutAgentsByAgentIdError, PutAgentsByAgentIdResponse, PutDevicesByDeviceIdData, PutDevicesByDeviceIdError, PutDevicesByDeviceIdFavoriteData, PutDevicesByDeviceIdFavoriteError, PutDevicesByDeviceIdFavoriteResponse, PutDevicesByDeviceIdResponse, PutDevicesByDeviceIdSharesByUserIdData, PutDevicesByDeviceIdSharesByUserIdError, PutDevicesByDeviceIdSharesByUserIdResponse, PutDevicesByDeviceIdSshData, PutDevicesByDeviceIdSshError, PutDevicesByDeviceIdSshResponse } from './types.gen';
 
 export type Options<TComposable extends Composable = '$fetch', TData extends TDataShape = TDataShape, ResT = unknown, DefaultT = undefined> = Options2<TComposable, TData, ResT, DefaultT> & {
     /**
@@ -631,7 +631,7 @@ export const postDevicesByDeviceIdPowerOn = <TComposable extends Composable = '$
 /**
  * Shut down a device
  *
- * Shuts the device down through the Linux agent running on it.
+ * Shuts the device down through the Linux agent running on it, or over SSH through its agent.
  */
 export const postDevicesByDeviceIdShutdown = <TComposable extends Composable = '$fetch', DefaultT extends PostDevicesByDeviceIdShutdownResponse = PostDevicesByDeviceIdShutdownResponse>(options: Options<TComposable, PostDevicesByDeviceIdShutdownData, PostDevicesByDeviceIdShutdownResponse, DefaultT>): RequestResult<TComposable, PostDevicesByDeviceIdShutdownResponse | DefaultT, DefaultT> => (options.client ?? client).post<TComposable, PostDevicesByDeviceIdShutdownResponse | DefaultT, PostDevicesByDeviceIdShutdownError, DefaultT>({
     security: [{ scheme: 'bearer', type: 'http' }],
@@ -642,7 +642,7 @@ export const postDevicesByDeviceIdShutdown = <TComposable extends Composable = '
 /**
  * Reboot a device
  *
- * Reboots the device through the Linux agent running on it.
+ * Reboots the device through the Linux agent running on it, or over SSH through its agent.
  */
 export const postDevicesByDeviceIdReboot = <TComposable extends Composable = '$fetch', DefaultT extends PostDevicesByDeviceIdRebootResponse = PostDevicesByDeviceIdRebootResponse>(options: Options<TComposable, PostDevicesByDeviceIdRebootData, PostDevicesByDeviceIdRebootResponse, DefaultT>): RequestResult<TComposable, PostDevicesByDeviceIdRebootResponse | DefaultT, DefaultT> => (options.client ?? client).post<TComposable, PostDevicesByDeviceIdRebootResponse | DefaultT, PostDevicesByDeviceIdRebootError, DefaultT>({
     security: [{ scheme: 'bearer', type: 'http' }],
@@ -720,6 +720,67 @@ export const deleteDevicesByDeviceIdSharesByUserId = <TComposable extends Compos
 export const putDevicesByDeviceIdSharesByUserId = <TComposable extends Composable = '$fetch', DefaultT extends PutDevicesByDeviceIdSharesByUserIdResponse = PutDevicesByDeviceIdSharesByUserIdResponse>(options: Options<TComposable, PutDevicesByDeviceIdSharesByUserIdData, PutDevicesByDeviceIdSharesByUserIdResponse, DefaultT>): RequestResult<TComposable, PutDevicesByDeviceIdSharesByUserIdResponse | DefaultT, DefaultT> => (options.client ?? client).put<TComposable, PutDevicesByDeviceIdSharesByUserIdResponse | DefaultT, PutDevicesByDeviceIdSharesByUserIdError, DefaultT>({
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/devices/{deviceID}/shares/{userID}',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Remove a device's SSH login
+ */
+export const deleteDevicesByDeviceIdSsh = <TComposable extends Composable = '$fetch', DefaultT extends DeleteDevicesByDeviceIdSshResponse = DeleteDevicesByDeviceIdSshResponse>(options: Options<TComposable, DeleteDevicesByDeviceIdSshData, DeleteDevicesByDeviceIdSshResponse, DefaultT>): RequestResult<TComposable, DeleteDevicesByDeviceIdSshResponse | DefaultT, DefaultT> => (options.client ?? client).delete<TComposable, DeleteDevicesByDeviceIdSshResponse | DefaultT, DeleteDevicesByDeviceIdSshError, DefaultT>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/devices/{deviceID}/ssh',
+    ...options
+});
+
+/**
+ * Get a device's SSH login
+ *
+ * The SSH login without its password or private key. Owner only.
+ */
+export const getDevicesByDeviceIdSsh = <TComposable extends Composable = '$fetch', DefaultT extends GetDevicesByDeviceIdSshResponse = GetDevicesByDeviceIdSshResponse>(options: Options<TComposable, GetDevicesByDeviceIdSshData, GetDevicesByDeviceIdSshResponse, DefaultT>): RequestResult<TComposable, GetDevicesByDeviceIdSshResponse | DefaultT, DefaultT> => (options.client ?? client).get<TComposable, GetDevicesByDeviceIdSshResponse | DefaultT, GetDevicesByDeviceIdSshError, DefaultT>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/devices/{deviceID}/ssh',
+    ...options
+});
+
+/**
+ * Set a device's SSH login
+ *
+ * Stores the login the device's agent uses for shutdown and reboot over SSH. With `auth: { type: "generate_key" }` the server creates an Ed25519 key pair and returns the public key for the device's authorized_keys. Changing host or port un-trusts the host key.
+ */
+export const putDevicesByDeviceIdSsh = <TComposable extends Composable = '$fetch', DefaultT extends PutDevicesByDeviceIdSshResponse = PutDevicesByDeviceIdSshResponse>(options: Options<TComposable, PutDevicesByDeviceIdSshData, PutDevicesByDeviceIdSshResponse, DefaultT>): RequestResult<TComposable, PutDevicesByDeviceIdSshResponse | DefaultT, DefaultT> => (options.client ?? client).put<TComposable, PutDevicesByDeviceIdSshResponse | DefaultT, PutDevicesByDeviceIdSshError, DefaultT>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/devices/{deviceID}/ssh',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Test a device's SSH login
+ *
+ * The device's agent logs in (without running anything) and reports the device's host key fingerprint. Trust it with `POST /ssh/trust` to allow shutdown and reboot.
+ */
+export const postDevicesByDeviceIdSshTest = <TComposable extends Composable = '$fetch', DefaultT extends PostDevicesByDeviceIdSshTestResponse = PostDevicesByDeviceIdSshTestResponse>(options: Options<TComposable, PostDevicesByDeviceIdSshTestData, PostDevicesByDeviceIdSshTestResponse, DefaultT>): RequestResult<TComposable, PostDevicesByDeviceIdSshTestResponse | DefaultT, DefaultT> => (options.client ?? client).post<TComposable, PostDevicesByDeviceIdSshTestResponse | DefaultT, PostDevicesByDeviceIdSshTestError, DefaultT>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/devices/{deviceID}/ssh/test',
+    ...options
+});
+
+/**
+ * Trust a device's SSH host key
+ *
+ * Stores the fingerprint from a test login. Logins to another host key fail from then on.
+ */
+export const postDevicesByDeviceIdSshTrust = <TComposable extends Composable = '$fetch', DefaultT extends PostDevicesByDeviceIdSshTrustResponse = PostDevicesByDeviceIdSshTrustResponse>(options: Options<TComposable, PostDevicesByDeviceIdSshTrustData, PostDevicesByDeviceIdSshTrustResponse, DefaultT>): RequestResult<TComposable, PostDevicesByDeviceIdSshTrustResponse | DefaultT, DefaultT> => (options.client ?? client).post<TComposable, PostDevicesByDeviceIdSshTrustResponse | DefaultT, PostDevicesByDeviceIdSshTrustError, DefaultT>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/devices/{deviceID}/ssh/trust',
     ...options,
     headers: {
         'Content-Type': 'application/json',

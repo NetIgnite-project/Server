@@ -1591,6 +1591,148 @@ export const zPutDevicesByDeviceIdSharesByUserIdResponse = z.object({
     data: z.null()
 });
 
+export const zDeleteDevicesByDeviceIdSshPath = z.object({
+    deviceID: z.int().gt(0).lte(9007199254740991)
+});
+
+/**
+ * SSH login removed
+ */
+export const zDeleteDevicesByDeviceIdSshResponse = z.object({
+    success: z.literal(true),
+    code: z.literal(200),
+    message: z.literal('SSH login removed'),
+    data: z.null()
+});
+
+export const zGetDevicesByDeviceIdSshPath = z.object({
+    deviceID: z.int().gt(0).lte(9007199254740991)
+});
+
+/**
+ * SSH login retrieved
+ */
+export const zGetDevicesByDeviceIdSshResponse = z.object({
+    success: z.literal(true),
+    code: z.literal(200),
+    message: z.literal('SSH login retrieved'),
+    data: z.object({
+        configured: z.boolean(),
+        host: z.string().nullable(),
+        effective_host: z.string().nullable(),
+        port: z.number().nullable(),
+        username: z.string().nullable(),
+        auth_type: z.enum(['password', 'key']).nullable(),
+        os: z.enum(['posix', 'windows']).nullable(),
+        sudo: z.boolean().nullable(),
+        public_key: z.string().nullable(),
+        host_key: z.string().nullable(),
+        authorized_keys: z.string().nullable(),
+        sudoers: z.string().nullable(),
+        agent_ready: z.boolean()
+    })
+});
+
+export const zPutDevicesByDeviceIdSshBody = z.object({
+    host: z.string().max(253).nullish().default(null),
+    port: z.int().gte(1).lte(65535).optional().default(22),
+    username: z.string().min(1).max(64).regex(/^[A-Za-z0-9._@\\-]+$/),
+    os: z.enum(['posix', 'windows']).optional().default('posix'),
+    sudo: z.boolean().optional().default(true),
+    auth: z.union([
+        z.object({
+            type: z.literal('password'),
+            password: z.string().min(1).max(256)
+        }),
+        z.object({
+            type: z.literal('generate_key')
+        }),
+        z.object({
+            type: z.literal('keep')
+        })
+    ])
+});
+
+export const zPutDevicesByDeviceIdSshPath = z.object({
+    deviceID: z.int().gt(0).lte(9007199254740991)
+});
+
+/**
+ * SSH login saved
+ */
+export const zPutDevicesByDeviceIdSshResponse = z.object({
+    success: z.literal(true),
+    code: z.literal(200),
+    message: z.literal('SSH login saved'),
+    data: z.object({
+        configured: z.boolean(),
+        host: z.string().nullable(),
+        effective_host: z.string().nullable(),
+        port: z.number().nullable(),
+        username: z.string().nullable(),
+        auth_type: z.enum(['password', 'key']).nullable(),
+        os: z.enum(['posix', 'windows']).nullable(),
+        sudo: z.boolean().nullable(),
+        public_key: z.string().nullable(),
+        host_key: z.string().nullable(),
+        authorized_keys: z.string().nullable(),
+        sudoers: z.string().nullable(),
+        agent_ready: z.boolean()
+    })
+});
+
+export const zPostDevicesByDeviceIdSshTestPath = z.object({
+    deviceID: z.int().gt(0).lte(9007199254740991)
+});
+
+/**
+ * SSH login tested
+ */
+export const zPostDevicesByDeviceIdSshTestResponse = z.object({
+    success: z.literal(true),
+    code: z.literal(200),
+    message: z.literal('SSH login tested'),
+    data: z.object({
+        online: z.boolean(),
+        authenticated: z.boolean(),
+        host_key: z.string().nullable(),
+        trusted: z.boolean(),
+        error: z.string().nullable()
+    })
+});
+
+export const zPostDevicesByDeviceIdSshTrustBody = z.object({
+    host_key: z.string().regex(/^SHA256:[A-Za-z0-9+\/]{43}$/)
+});
+
+export const zPostDevicesByDeviceIdSshTrustPath = z.object({
+    deviceID: z.int().gt(0).lte(9007199254740991)
+});
+
+/**
+ * Host key trusted
+ */
+export const zPostDevicesByDeviceIdSshTrustResponse = z.object({
+    success: z.literal(true),
+    code: z.literal(200),
+    message: z.literal('Host key trusted'),
+    data: z.object({
+        configured: z.boolean(),
+        host: z.string().nullable(),
+        effective_host: z.string().nullable(),
+        port: z.number().nullable(),
+        username: z.string().nullable(),
+        auth_type: z.enum(['password', 'key']).nullable(),
+        os: z.enum(['posix', 'windows']).nullable(),
+        sudo: z.boolean().nullable(),
+        public_key: z.string().nullable(),
+        host_key: z.string().nullable(),
+        authorized_keys: z.string().nullable(),
+        sudoers: z.string().nullable(),
+        agent_ready: z.boolean()
+    })
+});
+
 /**
  * Firmware releases retrieved
  */

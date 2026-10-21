@@ -68,10 +68,14 @@ Follow the LeiCraftMC Style Guides: https://github.com/LeiCraftMC/Style-Guides.
 - **Console** (`server/lib/agents/console.ts`, `/ws/console`): the browser authenticates with its
   first message (`{type:"auth", token, agent_id}`), owner only, Origin must be NETIGNITE_APP_URL;
   the session is checked again every minute.
+- **SSH** (`server/lib/ssh/`): logins are owner-only and write-only; secrets go through
+  `Secrets` (`server/lib/utils/secrets.ts`) and are only sent to the device's agent in
+  `SSH_CHECK`/`SSH_EXEC`. `SSH_EXEC` needs a trusted host key; changing host or port un-trusts it.
+  `DeviceActions.hostControl` prefers the device's host agent, then SSH.
 - **Enrollment** takes the agent's `kind`; a token of another kind gets 409 and stays valid.
 - Run Biome's autofix only on the files you changed: on the whole tree it rewrites `@ts-ignore` to
   `@ts-expect-error`, which breaks `nuxt typecheck`.
 - Tests: `tests/netignite.test.ts` (API + gateway with `tests/helpers/fake-agent.ts`),
   `tests/v1-import.test.ts`, `tests/firmware.test.ts` (catalog against a fake GitHub, flash image),
-  `tests/nvs.test.ts` and `tests/agent-control.test.ts` (OTA, console, device control, install
-  script).
+  `tests/nvs.test.ts`, `tests/agent-control.test.ts` (OTA, console, device control, install
+  script) and `tests/ssh.test.ts`.

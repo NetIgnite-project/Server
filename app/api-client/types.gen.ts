@@ -3288,6 +3288,354 @@ export type PutDevicesByDeviceIdSharesByUserIdResponses = {
 
 export type PutDevicesByDeviceIdSharesByUserIdResponse = PutDevicesByDeviceIdSharesByUserIdResponses[keyof PutDevicesByDeviceIdSharesByUserIdResponses];
 
+export type DeleteDevicesByDeviceIdSshData = {
+    body?: never;
+    path: {
+        deviceID: number;
+    };
+    query?: never;
+    url: '/devices/{deviceID}/ssh';
+};
+
+export type DeleteDevicesByDeviceIdSshErrors = {
+    /**
+     * Validation Error
+     */
+    400: {
+        success: false;
+        error: Array<unknown>;
+        data: unknown;
+    };
+    /**
+     * Only the device's owner can do this
+     */
+    403: {
+        success: false;
+        code: 403;
+        message: 'Only the device\'s owner can do this';
+    };
+    /**
+     * Device not found
+     */
+    404: {
+        success: false;
+        code: 404;
+        message: 'Device not found';
+    };
+};
+
+export type DeleteDevicesByDeviceIdSshError = DeleteDevicesByDeviceIdSshErrors[keyof DeleteDevicesByDeviceIdSshErrors];
+
+export type DeleteDevicesByDeviceIdSshResponses = {
+    /**
+     * SSH login removed
+     */
+    200: {
+        success: true;
+        code: 200;
+        message: 'SSH login removed';
+        data: null;
+    };
+};
+
+export type DeleteDevicesByDeviceIdSshResponse = DeleteDevicesByDeviceIdSshResponses[keyof DeleteDevicesByDeviceIdSshResponses];
+
+export type GetDevicesByDeviceIdSshData = {
+    body?: never;
+    path: {
+        deviceID: number;
+    };
+    query?: never;
+    url: '/devices/{deviceID}/ssh';
+};
+
+export type GetDevicesByDeviceIdSshErrors = {
+    /**
+     * Validation Error
+     */
+    400: {
+        success: false;
+        error: Array<unknown>;
+        data: unknown;
+    };
+    /**
+     * Only the device's owner can do this
+     */
+    403: {
+        success: false;
+        code: 403;
+        message: 'Only the device\'s owner can do this';
+    };
+    /**
+     * Device not found
+     */
+    404: {
+        success: false;
+        code: 404;
+        message: 'Device not found';
+    };
+};
+
+export type GetDevicesByDeviceIdSshError = GetDevicesByDeviceIdSshErrors[keyof GetDevicesByDeviceIdSshErrors];
+
+export type GetDevicesByDeviceIdSshResponses = {
+    /**
+     * SSH login retrieved
+     */
+    200: {
+        success: true;
+        code: 200;
+        message: 'SSH login retrieved';
+        data: {
+            configured: boolean;
+            host: string | null;
+            effective_host: string | null;
+            port: number | null;
+            username: string | null;
+            auth_type: 'password' | 'key' | null;
+            os: 'posix' | 'windows' | null;
+            sudo: boolean | null;
+            public_key: string | null;
+            host_key: string | null;
+            authorized_keys: string | null;
+            sudoers: string | null;
+            agent_ready: boolean;
+        };
+    };
+};
+
+export type GetDevicesByDeviceIdSshResponse = GetDevicesByDeviceIdSshResponses[keyof GetDevicesByDeviceIdSshResponses];
+
+export type PutDevicesByDeviceIdSshData = {
+    body: {
+        host?: string | null;
+        port?: number;
+        username: string;
+        os?: 'posix' | 'windows';
+        sudo?: boolean;
+        auth: {
+            type: 'password';
+            password: string;
+        } | {
+            type: 'generate_key';
+        } | {
+            type: 'keep';
+        };
+    };
+    path: {
+        deviceID: number;
+    };
+    query?: never;
+    url: '/devices/{deviceID}/ssh';
+};
+
+export type PutDevicesByDeviceIdSshErrors = {
+    /**
+     * Bad Request: Syntax or validation error in request
+     */
+    400: {
+        success: false;
+        code: 400;
+        message: 'Bad Request: Syntax or validation error in request';
+    };
+    /**
+     * Only the device's owner can do this
+     */
+    403: {
+        success: false;
+        code: 403;
+        message: 'Only the device\'s owner can do this';
+    };
+    /**
+     * Device not found
+     */
+    404: {
+        success: false;
+        code: 404;
+        message: 'Device not found';
+    };
+};
+
+export type PutDevicesByDeviceIdSshError = PutDevicesByDeviceIdSshErrors[keyof PutDevicesByDeviceIdSshErrors];
+
+export type PutDevicesByDeviceIdSshResponses = {
+    /**
+     * SSH login saved
+     */
+    200: {
+        success: true;
+        code: 200;
+        message: 'SSH login saved';
+        data: {
+            configured: boolean;
+            host: string | null;
+            effective_host: string | null;
+            port: number | null;
+            username: string | null;
+            auth_type: 'password' | 'key' | null;
+            os: 'posix' | 'windows' | null;
+            sudo: boolean | null;
+            public_key: string | null;
+            host_key: string | null;
+            authorized_keys: string | null;
+            sudoers: string | null;
+            agent_ready: boolean;
+        };
+    };
+};
+
+export type PutDevicesByDeviceIdSshResponse = PutDevicesByDeviceIdSshResponses[keyof PutDevicesByDeviceIdSshResponses];
+
+export type PostDevicesByDeviceIdSshTestData = {
+    body?: never;
+    path: {
+        deviceID: number;
+    };
+    query?: never;
+    url: '/devices/{deviceID}/ssh/test';
+};
+
+export type PostDevicesByDeviceIdSshTestErrors = {
+    /**
+     * Validation Error
+     */
+    400: {
+        success: false;
+        error: Array<unknown>;
+        data: unknown;
+    };
+    /**
+     * Only the device's owner can do this
+     */
+    403: {
+        success: false;
+        code: 403;
+        message: 'Only the device\'s owner can do this';
+    };
+    /**
+     * Device or SSH login not found
+     */
+    404: {
+        success: false;
+        code: 404;
+        message: 'Device or SSH login not found';
+    };
+    /**
+     * The device's agent can't log in over SSH
+     */
+    409: {
+        success: false;
+        code: 409;
+        message: 'The device\'s agent can\'t log in over SSH';
+    };
+    /**
+     * The agent is offline
+     */
+    503: {
+        success: false;
+        code: 503;
+        message: 'The agent is offline';
+    };
+    /**
+     * The agent didn't answer in time
+     */
+    504: {
+        success: false;
+        code: 504;
+        message: 'The agent didn\'t answer in time';
+    };
+};
+
+export type PostDevicesByDeviceIdSshTestError = PostDevicesByDeviceIdSshTestErrors[keyof PostDevicesByDeviceIdSshTestErrors];
+
+export type PostDevicesByDeviceIdSshTestResponses = {
+    /**
+     * SSH login tested
+     */
+    200: {
+        success: true;
+        code: 200;
+        message: 'SSH login tested';
+        data: {
+            online: boolean;
+            authenticated: boolean;
+            host_key: string | null;
+            trusted: boolean;
+            error: string | null;
+        };
+    };
+};
+
+export type PostDevicesByDeviceIdSshTestResponse = PostDevicesByDeviceIdSshTestResponses[keyof PostDevicesByDeviceIdSshTestResponses];
+
+export type PostDevicesByDeviceIdSshTrustData = {
+    body: {
+        host_key: string;
+    };
+    path: {
+        deviceID: number;
+    };
+    query?: never;
+    url: '/devices/{deviceID}/ssh/trust';
+};
+
+export type PostDevicesByDeviceIdSshTrustErrors = {
+    /**
+     * Bad Request: Syntax or validation error in request
+     */
+    400: {
+        success: false;
+        code: 400;
+        message: 'Bad Request: Syntax or validation error in request';
+    };
+    /**
+     * Only the device's owner can do this
+     */
+    403: {
+        success: false;
+        code: 403;
+        message: 'Only the device\'s owner can do this';
+    };
+    /**
+     * Device or SSH login not found
+     */
+    404: {
+        success: false;
+        code: 404;
+        message: 'Device or SSH login not found';
+    };
+};
+
+export type PostDevicesByDeviceIdSshTrustError = PostDevicesByDeviceIdSshTrustErrors[keyof PostDevicesByDeviceIdSshTrustErrors];
+
+export type PostDevicesByDeviceIdSshTrustResponses = {
+    /**
+     * Host key trusted
+     */
+    200: {
+        success: true;
+        code: 200;
+        message: 'Host key trusted';
+        data: {
+            configured: boolean;
+            host: string | null;
+            effective_host: string | null;
+            port: number | null;
+            username: string | null;
+            auth_type: 'password' | 'key' | null;
+            os: 'posix' | 'windows' | null;
+            sudo: boolean | null;
+            public_key: string | null;
+            host_key: string | null;
+            authorized_keys: string | null;
+            sudoers: string | null;
+            agent_ready: boolean;
+        };
+    };
+};
+
+export type PostDevicesByDeviceIdSshTrustResponse = PostDevicesByDeviceIdSshTrustResponses[keyof PostDevicesByDeviceIdSshTrustResponses];
+
 export type GetFirmwareData = {
     body?: never;
     path?: never;

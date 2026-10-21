@@ -1,6 +1,7 @@
 import { AgentRequestError } from "../agents/connection";
 import { AgentRegistry } from "../agents/registry";
 import type { DB } from "../db";
+import { SshCredentials } from "../ssh/credentials";
 
 export class DeviceActionError extends Error {
 	constructor(
@@ -28,27 +29,71 @@ export class DeviceActions {
 		);
 	}
 
-	/** Shuts down or reboots the device through the Linux agent running on it. */
+	/**
+	 * Shuts down or reboots the device: through the Linux agent running on it, or else over SSH
+	 * through the device's agent (with a trusted host key).
+	 */
 	static async hostControl(device: DB.Models.Device, action: "shutdown" | "reboot") {
-		if (device.host_agent_id === null) {
-			throw new DeviceActionError(409, `No ${action} method is configured for this device`);
+		const hostAgent = device.host_agent_id !== null ? AgentRegistry.get(device.host_agent_id) : null;
+		if (hostAgent?.hasCapability("host.control")) {
+			await this.run(() => hostAgent.request("HOST_CONTROL", { action }, 10_000));
+			return;
 		}
 
-		const connection = AgentRegistry.get(device.host_agent_id);
-		if (!connection) throw new DeviceActionError(503, "The device's host agent is offline");
+		const credential = SshCredentials.get(device.id);
+		const target = credential ? SshCredentials.target(device, credential) : null;
+		if (credential && target) {
+			if (!target.host_key) {
+				throw new DeviceActionError(409, "Test the SSH login and trust the device's host key first");
+			}
+			const agent = SshCredentials.agentFor(device);
+			if (!agent) {
+				throw new DeviceActionError(
+					device.agent_id !== null && !AgentRegistry.get(device.agent_id) ? 503 : 409,
+					device.agent_id === null
+						? "No agent is assigned to this device"
+						: AgentRegistry.get(device.agent_id)
+							? "The device's agent can't log in over SSH"
+							: "Agent is offline",
+				);
+			}
+			await this.run(() =>
+				agent.request(
+					"SSH_EXEC",
+					{
+						...target,
+						host_key: target.host_key as string,
+						action,
+						os: credential.os,
+						sudo: credential.sudo && credential.username !== "root",
+					},
+					15_000,
+				),
+			);
+			return;
+		}
 
-		await this.run(() => connection.request("HOST_CONTROL", { action }, 10_000));
+		if (device.host_agent_id !== null) {
+			throw new DeviceActionError(503, "The device's host agent is offline");
+		}
+		throw new DeviceActionError(409, `No ${action} method is configured for this device`);
 	}
 
-	/** Which power actions are currently possible, for the dashboard. */
-	static availableActions(device: DB.Models.Device) {
+	/**
+	 * Which power actions are currently possible, for the dashboard. `sshTrusted`: the device has an
+	 * SSH login with a trusted host key.
+	 */
+	static availableActions(device: DB.Models.Device, sshTrusted = false) {
 		const wolAgent = device.agent_id !== null ? AgentRegistry.get(device.agent_id) : null;
 		const hostAgent = device.host_agent_id !== null ? AgentRegistry.get(device.host_agent_id) : null;
+		const control =
+			(hostAgent?.hasCapability("host.control") ?? false) ||
+			(sshTrusted && (wolAgent?.hasCapability("ssh") ?? false));
 
 		return {
 			power_on: wolAgent?.hasCapability("wake") ?? false,
-			shutdown: hostAgent?.hasCapability("host.control") ?? false,
-			reboot: hostAgent?.hasCapability("host.control") ?? false,
+			shutdown: control,
+			reboot: control,
 		};
 	}
 

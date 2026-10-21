@@ -22,6 +22,7 @@ function setTestEnv(rootDir: string) {
 		NETIGNITE_CONFIG_BASE_DIR: rootDir,
 
 		NETIGNITE_APP_URL: "http://localhost:18232",
+		NETIGNITE_SECRETS_KEY: undefined,
 
 		// Tests configure the catalog with a fake GitHub (tests/firmware.test.ts).
 		NETIGNITE_FIRMWARE_SYNC: false,

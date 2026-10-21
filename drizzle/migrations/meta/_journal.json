@@ -15,6 +15,13 @@
       "when": 1792530394007,
       "tag": "0001_glorious_silver_fox",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1792565522431,
+      "tag": "0002_lethal_lyja",
+      "breakpoints": true
     }
   ]
 }
