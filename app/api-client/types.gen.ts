@@ -1202,7 +1202,7 @@ export type PostAgentsEnrollData = {
     body: {
         enrollment_token: string;
         secret: string;
-        kind?: 'esp32' | 'linux';
+        kind?: 'esp32' | 'linux' | 'windows' | 'macos';
     };
     path?: never;
     query?: never;
@@ -1256,7 +1256,7 @@ export type PostAgentsEnrollResponses = {
         message: 'Agent enrolled';
         data: {
             agent_id: number;
-            kind: 'esp32' | 'linux';
+            kind: 'esp32' | 'linux' | 'windows' | 'macos';
             token_id: string;
         };
     };
@@ -1283,7 +1283,7 @@ export type GetAgentsResponses = {
             id: number;
             name: string;
             description: string;
-            kind: 'esp32' | 'linux';
+            kind: 'esp32' | 'linux' | 'windows' | 'macos';
             state: 'online' | 'offline' | 'unenrolled';
             version: string | null;
             capabilities: Array<string>;
@@ -1313,7 +1313,7 @@ export type PostAgentsData = {
     body: {
         name: string;
         description?: string;
-        kind: 'esp32' | 'linux';
+        kind: 'esp32' | 'linux' | 'windows' | 'macos';
     };
     path?: never;
     query?: never;
@@ -1345,7 +1345,7 @@ export type PostAgentsResponses = {
             id: number;
             name: string;
             description: string;
-            kind: 'esp32' | 'linux';
+            kind: 'esp32' | 'linux' | 'windows' | 'macos';
             state: 'online' | 'offline' | 'unenrolled';
             version: string | null;
             capabilities: Array<string>;
@@ -1509,7 +1509,7 @@ export type GetAgentsByAgentIdResponses = {
             id: number;
             name: string;
             description: string;
-            kind: 'esp32' | 'linux';
+            kind: 'esp32' | 'linux' | 'windows' | 'macos';
             state: 'online' | 'offline' | 'unenrolled';
             version: string | null;
             capabilities: Array<string>;
@@ -1580,7 +1580,7 @@ export type PutAgentsByAgentIdResponses = {
             id: number;
             name: string;
             description: string;
-            kind: 'esp32' | 'linux';
+            kind: 'esp32' | 'linux' | 'windows' | 'macos';
             state: 'online' | 'offline' | 'unenrolled';
             version: string | null;
             capabilities: Array<string>;
@@ -1695,7 +1695,7 @@ export type PostAgentsByAgentIdRevokeResponses = {
             id: number;
             name: string;
             description: string;
-            kind: 'esp32' | 'linux';
+            kind: 'esp32' | 'linux' | 'windows' | 'macos';
             state: 'online' | 'offline' | 'unenrolled';
             version: string | null;
             capabilities: Array<string>;
@@ -2251,7 +2251,7 @@ export type PostAgentsByAgentIdFactoryResetResponses = {
             id: number;
             name: string;
             description: string;
-            kind: 'esp32' | 'linux';
+            kind: 'esp32' | 'linux' | 'windows' | 'macos';
             state: 'online' | 'offline' | 'unenrolled';
             version: string | null;
             capabilities: Array<string>;
@@ -2314,13 +2314,13 @@ export type GetDevicesResponses = {
             agent: {
                 id: number;
                 name: string;
-                kind: 'esp32' | 'linux';
+                kind: 'esp32' | 'linux' | 'windows' | 'macos';
                 state: 'online' | 'offline' | 'unenrolled';
             } | null;
             host_agent: {
                 id: number;
                 name: string;
-                kind: 'esp32' | 'linux';
+                kind: 'esp32' | 'linux' | 'windows' | 'macos';
                 state: 'online' | 'offline' | 'unenrolled';
             } | null;
             favorite: boolean;
@@ -2401,13 +2401,13 @@ export type PostDevicesResponses = {
             agent: {
                 id: number;
                 name: string;
-                kind: 'esp32' | 'linux';
+                kind: 'esp32' | 'linux' | 'windows' | 'macos';
                 state: 'online' | 'offline' | 'unenrolled';
             } | null;
             host_agent: {
                 id: number;
                 name: string;
-                kind: 'esp32' | 'linux';
+                kind: 'esp32' | 'linux' | 'windows' | 'macos';
                 state: 'online' | 'offline' | 'unenrolled';
             } | null;
             favorite: boolean;
@@ -2539,13 +2539,13 @@ export type GetDevicesByDeviceIdResponses = {
             agent: {
                 id: number;
                 name: string;
-                kind: 'esp32' | 'linux';
+                kind: 'esp32' | 'linux' | 'windows' | 'macos';
                 state: 'online' | 'offline' | 'unenrolled';
             } | null;
             host_agent: {
                 id: number;
                 name: string;
-                kind: 'esp32' | 'linux';
+                kind: 'esp32' | 'linux' | 'windows' | 'macos';
                 state: 'online' | 'offline' | 'unenrolled';
             } | null;
             favorite: boolean;
@@ -2644,13 +2644,13 @@ export type PutDevicesByDeviceIdResponses = {
             agent: {
                 id: number;
                 name: string;
-                kind: 'esp32' | 'linux';
+                kind: 'esp32' | 'linux' | 'windows' | 'macos';
                 state: 'online' | 'offline' | 'unenrolled';
             } | null;
             host_agent: {
                 id: number;
                 name: string;
-                kind: 'esp32' | 'linux';
+                kind: 'esp32' | 'linux' | 'windows' | 'macos';
                 state: 'online' | 'offline' | 'unenrolled';
             } | null;
             favorite: boolean;

@@ -10,6 +10,7 @@ import { DevicePermissions } from "../../../../../devices/permissions";
 import { DeviceStatusService } from "../../../../../devices/status";
 import { SshLogins } from "../../../../../ssh/logins";
 import { APIResponse } from "../../../../utils/api-res";
+import { AgentSettings } from "../../../../utils/shared-models/netigniteData";
 import { APIResponseSpec, APIRouteSpec } from "../../../../utils/specHelpers";
 import { DOCS_TAGS } from "../../docs";
 import { getUserID, requireUser } from "../../middleware/requireUser";
@@ -119,7 +120,7 @@ async function checkHostAgentKind(hostAgentID: number | null | undefined) {
 		.from(DB.Tables.agents)
 		.where(eq(DB.Tables.agents.id, hostAgentID))
 		.get();
-	return agent?.kind === "linux";
+	return agent ? AgentSettings.isComputer(agent.kind) : false;
 }
 
 router.get(
@@ -165,7 +166,10 @@ router.post(
 			return APIResponse.badRequest(c, "Unknown agent");
 		}
 		if (!(await checkHostAgentKind(body.host_agent_id))) {
-			return APIResponse.badRequest(c, "The host agent must be a Linux agent");
+			return APIResponse.badRequest(
+				c,
+				"The agent on the device must be a Linux, Windows or macOS agent",
+			);
 		}
 
 		const device = await DB.instance()
@@ -269,7 +273,10 @@ router.put(
 			return APIResponse.badRequest(c, "Unknown agent");
 		}
 		if (!(await checkHostAgentKind(body.host_agent_id))) {
-			return APIResponse.badRequest(c, "The host agent must be a Linux agent");
+			return APIResponse.badRequest(
+				c,
+				"The agent on the device must be a Linux, Windows or macOS agent",
+			);
 		}
 
 		const updated = await DB.instance()

@@ -38,8 +38,9 @@ export const StatusMethods: Record<
 			"The agent checks whether the SSH port (22, or the port below) accepts connections. With an SSH login (SSH tab), it can also shut the device down and reboot it.",
 	},
 	host_agent: {
-		label: "Linux agent on the device",
-		description: "The device is online while the NetIgnite Linux agent running on it is connected.",
+		label: "Agent on the device",
+		description:
+			"The device is online while the NetIgnite agent running on it (Linux, Windows or macOS) is connected.",
 	},
 };
 
@@ -56,7 +57,12 @@ export const AccessRoles: Record<
 export const AgentKinds: Record<Agent["kind"], { label: string; icon: string }> = {
 	esp32: { label: "ESP32", icon: "i-lucide-cpu" },
 	linux: { label: "Linux agent", icon: "i-lucide-terminal" },
+	windows: { label: "Windows agent", icon: "i-lucide-monitor" },
+	macos: { label: "macOS agent", icon: "i-lucide-laptop" },
 };
+
+/** Agents that run on the machine they control (a device's "agent on the device"). */
+export const ComputerAgentKinds: readonly Agent["kind"][] = ["linux", "windows", "macos"];
 
 export const AgentStates: Record<Agent["state"], { label: string; color: BadgeColor }> = {
 	online: { label: "Online", color: "success" },

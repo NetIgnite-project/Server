@@ -21,11 +21,12 @@ the ESP32 (firmware 2.0.0) and for Linux (Agent-Linux 1.0.0). It includes everyt
 
 - Wake-on-LAN through an ESP32 or Linux agent, and status checks by MAC (IPv6 link-local), IPv4,
   IPv6, TCP port, SSH port or the Linux agent on the device.
-- Shutdown and reboot through the agent on the device (recommended), or over SSH through the
-  device's network agent, with keys only the agent holds, each limited to one command.
+- Shutdown and reboot through the agent on the device (Linux, Windows or macOS; recommended), or
+  over SSH through the device's network agent, with keys only the agent holds, each limited to one
+  command.
 - Sharing devices with other users as viewer, operator or manager.
 - ESP32 web installer, firmware updates over the network with automatic rollback, and a console.
-- Linux agent with a one-line installer.
+- The NetIgnite agent for Linux, Windows and macOS, with a one-line installer.
 - Installable as an app (PWA); REST API with API keys and an OpenAPI reference at `/api/docs/v1`.
 
 ### Changes since 2.0.0-beta.2
@@ -42,6 +43,11 @@ the ESP32 (firmware 2.0.0) and for Linux (Agent-Linux 1.0.0). It includes everyt
   `ssh` is now `ssh.power`, and neither carries credentials. Agents only offer SSH over TLS and
   allow 10 SSH logins a minute.
 - **SSH is off by default.** Admins turn it on under Server Settings (`ssh_enabled`).
+- **Windows and macOS agents.** New agent kinds `windows` and `macos` (Agent-Linux 1.0.0 runs on
+  both), with install scripts at `/install/windows.ps1` and `/install/macos.sh`. Any Linux, Windows
+  or macOS agent can be a device's **Agent on the device** (was "Linux agent on the device").
+  `NETIGNITE_AGENT_REPO` / `NETIGNITE_AGENT_VERSION` replace `NETIGNITE_LINUX_AGENT_REPO` /
+  `_VERSION`, which still work.
 - `NETIGNITE_SECRETS_KEY` is gone. After updating from a beta: remove the old `authorized_keys`
   lines that the server generated (or the password logins) from your devices, delete
   `config/secrets.key`, turn SSH on, and add the two new lines from each device's SSH tab.

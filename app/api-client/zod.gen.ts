@@ -492,7 +492,12 @@ export const zPostAdminFirmwareSyncResponse = z.object({
 export const zPostAgentsEnrollBody = z.object({
     enrollment_token: z.string().min(1).max(256),
     secret: z.string().min(32).max(128),
-    kind: z.enum(['esp32', 'linux']).optional()
+    kind: z.enum([
+        'esp32',
+        'linux',
+        'windows',
+        'macos'
+    ]).optional()
 });
 
 /**
@@ -504,7 +509,12 @@ export const zPostAgentsEnrollResponse = z.object({
     message: z.literal('Agent enrolled'),
     data: z.object({
         agent_id: z.number(),
-        kind: z.enum(['esp32', 'linux']),
+        kind: z.enum([
+            'esp32',
+            'linux',
+            'windows',
+            'macos'
+        ]),
         token_id: z.string()
     })
 });
@@ -520,7 +530,12 @@ export const zGetAgentsResponse = z.object({
         id: z.number(),
         name: z.string(),
         description: z.string(),
-        kind: z.enum(['esp32', 'linux']),
+        kind: z.enum([
+            'esp32',
+            'linux',
+            'windows',
+            'macos'
+        ]),
         state: z.enum([
             'online',
             'offline',
@@ -555,7 +570,12 @@ export const zGetAgentsResponse = z.object({
 export const zPostAgentsBody = z.object({
     name: z.string().min(1).max(64),
     description: z.string().max(500).optional().default(''),
-    kind: z.enum(['esp32', 'linux'])
+    kind: z.enum([
+        'esp32',
+        'linux',
+        'windows',
+        'macos'
+    ])
 });
 
 /**
@@ -569,7 +589,12 @@ export const zPostAgentsResponse = z.object({
         id: z.number(),
         name: z.string(),
         description: z.string(),
-        kind: z.enum(['esp32', 'linux']),
+        kind: z.enum([
+            'esp32',
+            'linux',
+            'windows',
+            'macos'
+        ]),
         state: z.enum([
             'online',
             'offline',
@@ -652,7 +677,12 @@ export const zGetAgentsByAgentIdResponse = z.object({
         id: z.number(),
         name: z.string(),
         description: z.string(),
-        kind: z.enum(['esp32', 'linux']),
+        kind: z.enum([
+            'esp32',
+            'linux',
+            'windows',
+            'macos'
+        ]),
         state: z.enum([
             'online',
             'offline',
@@ -704,7 +734,12 @@ export const zPutAgentsByAgentIdResponse = z.object({
         id: z.number(),
         name: z.string(),
         description: z.string(),
-        kind: z.enum(['esp32', 'linux']),
+        kind: z.enum([
+            'esp32',
+            'linux',
+            'windows',
+            'macos'
+        ]),
         state: z.enum([
             'online',
             'offline',
@@ -768,7 +803,12 @@ export const zPostAgentsByAgentIdRevokeResponse = z.object({
         id: z.number(),
         name: z.string(),
         description: z.string(),
-        kind: z.enum(['esp32', 'linux']),
+        kind: z.enum([
+            'esp32',
+            'linux',
+            'windows',
+            'macos'
+        ]),
         state: z.enum([
             'online',
             'offline',
@@ -963,7 +1003,12 @@ export const zPostAgentsByAgentIdFactoryResetResponse = z.object({
         id: z.number(),
         name: z.string(),
         description: z.string(),
-        kind: z.enum(['esp32', 'linux']),
+        kind: z.enum([
+            'esp32',
+            'linux',
+            'windows',
+            'macos'
+        ]),
         state: z.enum([
             'online',
             'offline',
@@ -1043,7 +1088,12 @@ export const zGetDevicesResponse = z.object({
         agent: z.object({
             id: z.number(),
             name: z.string(),
-            kind: z.enum(['esp32', 'linux']),
+            kind: z.enum([
+                'esp32',
+                'linux',
+                'windows',
+                'macos'
+            ]),
             state: z.enum([
                 'online',
                 'offline',
@@ -1053,7 +1103,12 @@ export const zGetDevicesResponse = z.object({
         host_agent: z.object({
             id: z.number(),
             name: z.string(),
-            kind: z.enum(['esp32', 'linux']),
+            kind: z.enum([
+                'esp32',
+                'linux',
+                'windows',
+                'macos'
+            ]),
             state: z.enum([
                 'online',
                 'offline',
@@ -1153,7 +1208,12 @@ export const zPostDevicesResponse = z.object({
         agent: z.object({
             id: z.number(),
             name: z.string(),
-            kind: z.enum(['esp32', 'linux']),
+            kind: z.enum([
+                'esp32',
+                'linux',
+                'windows',
+                'macos'
+            ]),
             state: z.enum([
                 'online',
                 'offline',
@@ -1163,7 +1223,12 @@ export const zPostDevicesResponse = z.object({
         host_agent: z.object({
             id: z.number(),
             name: z.string(),
-            kind: z.enum(['esp32', 'linux']),
+            kind: z.enum([
+                'esp32',
+                'linux',
+                'windows',
+                'macos'
+            ]),
             state: z.enum([
                 'online',
                 'offline',
@@ -1254,7 +1319,12 @@ export const zGetDevicesByDeviceIdResponse = z.object({
         agent: z.object({
             id: z.number(),
             name: z.string(),
-            kind: z.enum(['esp32', 'linux']),
+            kind: z.enum([
+                'esp32',
+                'linux',
+                'windows',
+                'macos'
+            ]),
             state: z.enum([
                 'online',
                 'offline',
@@ -1264,7 +1334,12 @@ export const zGetDevicesByDeviceIdResponse = z.object({
         host_agent: z.object({
             id: z.number(),
             name: z.string(),
-            kind: z.enum(['esp32', 'linux']),
+            kind: z.enum([
+                'esp32',
+                'linux',
+                'windows',
+                'macos'
+            ]),
             state: z.enum([
                 'online',
                 'offline',
@@ -1368,7 +1443,12 @@ export const zPutDevicesByDeviceIdResponse = z.object({
         agent: z.object({
             id: z.number(),
             name: z.string(),
-            kind: z.enum(['esp32', 'linux']),
+            kind: z.enum([
+                'esp32',
+                'linux',
+                'windows',
+                'macos'
+            ]),
             state: z.enum([
                 'online',
                 'offline',
@@ -1378,7 +1458,12 @@ export const zPutDevicesByDeviceIdResponse = z.object({
         host_agent: z.object({
             id: z.number(),
             name: z.string(),
-            kind: z.enum(['esp32', 'linux']),
+            kind: z.enum([
+                'esp32',
+                'linux',
+                'windows',
+                'macos'
+            ]),
             state: z.enum([
                 'online',
                 'offline',

@@ -1,7 +1,7 @@
 # NetIgnite Server
 
 The NetIgnite server: the dashboard, the REST API and the WebSocket gateway that NetIgnite agents
-(ESP32 firmware, Linux agent) connect to. Power on devices from anywhere, check whether they're
+(ESP32 firmware, the agent for Linux, Windows and macOS) connect to. Power on devices from anywhere, check whether they're
 online, and share them with other users.
 
 Documentation: <https://netignite.dev/docs>
@@ -82,18 +82,26 @@ trusted on first use: test the login, compare the fingerprint, trust it.
 exists at all. If you use SSH, log in as a dedicated user without other rights (on Windows, an
 administrator account is required for shutdown).
 
-### Linux agent
+### The agent on Linux, Windows and macOS
 
-The page of a Linux agent shows a one-line installer:
+The page of a Linux, Windows or macOS agent shows a one-line installer:
 
 ```bash
-curl -fsSL https://<server>/install/linux.sh | sudo sh -s -- <enrollment-token>
+curl -fsSL https://<server>/install/linux.sh | sudo sh -s -- <enrollment-token>   # Linux
+curl -fsSL https://<server>/install/macos.sh | sudo sh -s -- <enrollment-token>   # macOS
 ```
 
-`/install/linux.sh` downloads the agent from the [Agent-Linux](https://github.com/NetIgnite-project/Agent-Linux)
-releases (`NETIGNITE_LINUX_AGENT_REPO`; the newest stable release, a pre-release only while there
-is none, or the tag in `NETIGNITE_LINUX_AGENT_VERSION`), checks it against `SHA256SUMS`, pairs it
-and installs the systemd service.
+```powershell
+# Windows, in PowerShell opened with "Run as administrator"
+& ([scriptblock]::Create((irm https://<server>/install/windows.ps1))) <enrollment-token>
+```
+
+The scripts download the agent from the [Agent-Linux](https://github.com/NetIgnite-project/Agent-Linux)
+releases (`NETIGNITE_AGENT_REPO`; the newest stable release, a pre-release only while there is
+none, or the tag in `NETIGNITE_AGENT_VERSION`; the betas' `NETIGNITE_LINUX_AGENT_*` names still
+work), check it against `SHA256SUMS`, pair it and install the service (systemd, launchd or a
+scheduled task). Any of the three can be a device's **Agent on the device**; only the Linux agent
+has Wake-on-LAN mode.
 
 ### Upgrading from v1
 

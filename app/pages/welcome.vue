@@ -38,7 +38,8 @@ const steps = [
 	{
 		icon: "i-lucide-radio-tower",
 		title: "Add an agent",
-		description: "An ESP32 or Linux agent in the network of your devices.",
+		description:
+			"An ESP32 in the network of your devices, or the NetIgnite agent on a Linux, Windows or macOS machine.",
 		to: "/dashboard/agents/new",
 	},
 	{

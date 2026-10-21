@@ -10,8 +10,8 @@ import {
 import { createHash } from "node:crypto";
 import fs from "node:fs/promises";
 import path from "node:path";
+import { AgentInstaller } from "../server/lib/agents/agentInstaller";
 import { ConsoleRelay } from "../server/lib/agents/console";
-import { LinuxInstaller } from "../server/lib/agents/linuxInstaller";
 import { AgentRegistry } from "../server/lib/agents/registry";
 import { API } from "../server/lib/api";
 import { RuntimeMetadata } from "../server/lib/api/utils/metadata";
@@ -552,39 +552,60 @@ describe("Linux agent setup", () => {
 		expect(enrolled).toMatchObject({ agent_id: linux.id, kind: "linux" });
 	});
 
-	test("the install script is valid sh and uses the configured repository", async () => {
-		const script = LinuxInstaller.script({
+	test("the install scripts are valid and use the configured repository", async () => {
+		const options = {
 			serverURL: "https://netignite.example/it's",
 			repo: "Example/Agent-Linux",
 			version: "v1.2.3",
-		});
-		expect(script.startsWith("#!/bin/sh\n")).toBe(true);
-		expect(script).toContain(`SERVER='https://netignite.example/it'"'"'s'`);
-		expect(script).toContain("REPO='Example/Agent-Linux'");
-		expect(script).toContain('VERSION="${NETIGNITE_AGENT_VERSION:-v1.2.3}"');
-		expect(script).toContain("sha256sum -c");
-
+		};
 		const sh = Bun.which("sh");
-		if (sh) {
-			const file = path.join(firmwareDir, "linux.sh");
-			await Bun.write(file, script);
-			const check = Bun.spawnSync([sh, "-n", file]);
-			expect(check.exitCode).toBe(0);
+		for (const [name, script] of [
+			["linux.sh", AgentInstaller.linux(options)],
+			["macos.sh", AgentInstaller.macos(options)],
+		] as const) {
+			expect(script.startsWith("#!/bin/sh\n")).toBe(true);
+			expect(script).toContain(`SERVER='https://netignite.example/it'"'"'s'`);
+			expect(script).toContain("REPO='Example/Agent-Linux'");
+			expect(script).toContain('VERSION="${NETIGNITE_AGENT_VERSION:-v1.2.3}"');
+			if (sh) {
+				const file = path.join(firmwareDir, name);
+				await Bun.write(file, script);
+				expect(Bun.spawnSync([sh, "-n", file]).exitCode).toBe(0);
+			}
+		}
+		expect(AgentInstaller.linux(options)).toContain('FILE="netignite-agent-linux-$ARCH"');
+		expect(AgentInstaller.linux(options)).toContain("sha256sum -c");
+		const macos = AgentInstaller.macos(options);
+		expect(macos).toContain('FILE="netignite-agent-macos-$ARCH"');
+		expect(macos).toContain("shasum -a 256 -c");
+		// Signed only after the checksum matched.
+		expect(macos.indexOf("codesign --force --sign -")).toBeGreaterThan(
+			macos.indexOf("shasum -a 256 -c"),
+		);
+
+		const windows = AgentInstaller.windows(options);
+		expect(windows).toContain("$Server = 'https://netignite.example/it''s'");
+		expect(windows).toContain("$Repo = 'Example/Agent-Linux'");
+		expect(windows).toContain("else { 'v1.2.3' }");
+		expect(windows).toContain("Get-FileHash -Algorithm SHA256");
+		const powershell = Bun.which("pwsh") ?? Bun.which("powershell");
+		if (powershell) {
+			const file = path.join(firmwareDir, "windows.ps1");
+			await Bun.write(file, windows);
+			const parse = Bun.spawnSync([
+				powershell,
+				"-NoProfile",
+				"-NonInteractive",
+				"-Command",
+				`$errors = $null; [void][System.Management.Automation.Language.Parser]::ParseFile('${file}', [ref]$null, [ref]$errors); $errors.Count`,
+			]);
+			expect(parse.stdout.toString().trim()).toBe("0");
 		}
 	});
 
-	test("the install script takes the newest stable release, a pre-release only without one", async () => {
+	test("the sh install scripts take the newest stable release, a pre-release only without one", async () => {
 		const sh = Bun.which("sh");
 		if (!sh) return;
-		const script = LinuxInstaller.script({
-			serverURL: "https://netignite.example",
-			repo: "Example/Agent-Linux",
-			version: null,
-		});
-		// Only the release lookup: the rest of the script needs root and systemd.
-		const lookup = script.match(/\tif \[ -z "\$VERSION" \]; then\n[\s\S]*?\n\tfi\n/)?.[0];
-		expect(lookup).toBeDefined();
-
 		// A fake curl: /releases/latest answers with $STABLE or 404s, the release list with a beta.
 		const bin = path.join(firmwareDir, "fake-bin");
 		const curl = path.join(bin, "curl");
@@ -601,18 +622,67 @@ describe("Linux agent setup", () => {
 		);
 		await fs.chmod(curl, 0o755);
 
-		const pick = (stable: string) =>
-			Bun.spawnSync(
-				[
-					sh,
-					"-c",
-					`set -eu\nfail() { echo "$*" >&2; exit 1; }\nREPO=Example/Agent-Linux\nVERSION=\n${lookup}echo "$VERSION"`,
-				],
-				{ env: { ...process.env, PATH: `${bin}${path.delimiter}${process.env.PATH}`, STABLE: stable } },
-			)
-				.stdout.toString()
-				.trim();
-		expect(pick("v1.0.0")).toBe("v1.0.0");
-		expect(pick("")).toBe("v1.1.0-beta.1");
+		const options = {
+			serverURL: "https://netignite.example",
+			repo: "Example/Agent-Linux",
+			version: null,
+		};
+		for (const script of [AgentInstaller.linux(options), AgentInstaller.macos(options)]) {
+			// Only the release lookup: the rest of the script needs root and a service manager.
+			const lookup = script.match(/\tif \[ -z "\$VERSION" \]; then\n[\s\S]*?\n\tfi\n/)?.[0];
+			expect(lookup).toBeDefined();
+			const pick = (stable: string) =>
+				Bun.spawnSync(
+					[
+						sh,
+						"-c",
+						`set -eu\nfail() { echo "$*" >&2; exit 1; }\nREPO=Example/Agent-Linux\nVERSION=\n${lookup}echo "$VERSION"`,
+					],
+					{
+						env: { ...process.env, PATH: `${bin}${path.delimiter}${process.env.PATH}`, STABLE: stable },
+					},
+				)
+					.stdout.toString()
+					.trim();
+			expect(pick("v1.0.0")).toBe("v1.0.0");
+			expect(pick("")).toBe("v1.1.0-beta.1");
+		}
+	});
+
+	test("every computer kind can be the agent on a device; an ESP32 can't", async () => {
+		const owner = await seedSession((await seedUser("user")).id);
+		const kinds = ["linux", "windows", "macos"] as const;
+		for (const kind of kinds) {
+			const agent = await makeAPIRequest<{ id: number; kind: string }>("/v1/agents", {
+				method: "POST",
+				authToken: owner.token,
+				body: { name: `${kind} box`, kind },
+			});
+			expect(agent.kind).toBe(kind);
+			await makeAPIRequest("/v1/devices", {
+				method: "POST",
+				authToken: owner.token,
+				body: {
+					name: `${kind} device`,
+					type: "desktop",
+					mac_address: "aa:bb:cc:dd:ee:21",
+					host_agent_id: agent.id,
+				},
+			});
+		}
+		const esp = await makeAPIRequest<{ id: number }>("/v1/agents", {
+			method: "POST",
+			authToken: owner.token,
+			body: { name: "ESP", kind: "esp32" },
+		});
+		await makeAPIRequest(
+			"/v1/devices",
+			{
+				method: "POST",
+				authToken: owner.token,
+				body: { name: "x", type: "desktop", mac_address: "aa:bb:cc:dd:ee:22", host_agent_id: esp.id },
+			},
+			400,
+		);
 	});
 });

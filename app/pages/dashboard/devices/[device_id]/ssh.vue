@@ -9,6 +9,7 @@ import type {
 	PostDevicesByDeviceIdSshTestResponses,
 	PutDevicesByDeviceIdSshData,
 } from "~/api-client";
+import { useUserInfoStore } from "~/composables/stores/useUserStore";
 import type { Device, NewDevice } from "~/utils/types";
 
 type SshLogin = GetDevicesByDeviceIdSshResponses["200"]["data"];

@@ -30,7 +30,18 @@ const kindOptions = [
 		value: "linux",
 		label: "Linux agent",
 		description:
-			"A service for an always-on Linux machine (e.g. a Raspberry Pi or a server). Reports its own status, can shut it down, and can wake other devices.",
+			"A service on a Linux machine (e.g. a Raspberry Pi or a server). Reports its own status, can shut it down, and can wake other devices.",
+	},
+	{
+		value: "windows",
+		label: "Windows agent",
+		description:
+			"A service on a Windows 10 or 11 PC. Reports its status and can shut it down or restart it.",
+	},
+	{
+		value: "macos",
+		label: "macOS agent",
+		description: "A service on a Mac. Reports its status and can shut it down or restart it.",
 	},
 ];
 
@@ -106,18 +117,41 @@ async function createEnrollment() {
 	enrollment.value = res.data;
 }
 
-// The command that sets the agent up: the Linux install script, or the ESP32 firmware's serial console.
+// The command that sets the agent up: the platform's install script, or the ESP32 firmware's
+// serial console.
 const serverUrl = appUrl.replace(/\/$/, "");
 const setupCommand = computed(() => {
 	if (!enrollment.value || agent.isNew) return "";
-	return agent.data.value.kind === "linux"
-		? `curl -fsSL ${serverUrl}/install/linux.sh | sudo sh -s -- ${enrollment.value.token}`
-		: `setup ${serverUrl} ${enrollment.value.token}`;
+	const token = enrollment.value.token;
+	switch (agent.data.value.kind) {
+		case "linux":
+			return `curl -fsSL ${serverUrl}/install/linux.sh | sudo sh -s -- ${token}`;
+		case "macos":
+			return `curl -fsSL ${serverUrl}/install/macos.sh | sudo sh -s -- ${token}`;
+		case "windows":
+			// Windows PowerShell 5.1 needs TLS 1.2 switched on for HTTPS servers.
+			return `[Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12; & ([scriptblock]::Create((irm '${serverUrl}/install/windows.ps1'))) '${token}'`;
+		default:
+			return `setup ${serverUrl} ${token}`;
+	}
 });
-// For a machine that already has the Linux agent installed.
-const pairCommand = computed(() =>
-	enrollment.value ? `sudo netignite-agent pair ${serverUrl} ${enrollment.value.token}` : "",
-);
+// For a machine that already has the agent installed.
+const pairCommand = computed(() => {
+	if (!enrollment.value) return "";
+	return agent.data.value.kind === "windows"
+		? `& "C:\\Program Files\\NetIgnite\\netignite-agent.exe" pair ${serverUrl} ${enrollment.value.token}`
+		: `sudo netignite-agent pair ${serverUrl} ${enrollment.value.token}`;
+});
+const setupHint = computed(() => {
+	switch (agent.data.value.kind) {
+		case "windows":
+			return "Run the command below in PowerShell opened with Run as administrator, on the Windows PC (Windows 10 or 11, 64-bit). It downloads the NetIgnite agent, checks it, pairs it with this server and installs it as a scheduled task that starts with Windows.";
+		case "macos":
+			return "Run the command below in Terminal on the Mac (macOS 13 or newer). It downloads the NetIgnite agent, checks it, pairs it with this server and installs it as a launchd daemon.";
+		default:
+			return "Run the command below on the Linux machine (systemd, x86-64 or 64-bit ARM). It downloads the NetIgnite agent, checks it, pairs it with this server and installs it as a service.";
+	}
+});
 
 async function copy(text: string) {
 	try {
@@ -279,11 +313,7 @@ async function onDelete() {
 				</template>
 
 				<template v-else>
-					<p class="text-sm text-slate-300">
-						Run the command below on the Linux machine (systemd, x86-64 or 64-bit ARM). It downloads the
-						NetIgnite agent, checks it, pairs it with this server and installs it as a service. The command
-						works once and expires after 15 minutes.
-					</p>
+					<p class="text-sm text-slate-300">{{ setupHint }} The command works once and expires after 15 minutes.</p>
 				</template>
 
 				<div class="mt-4 space-y-3">
@@ -314,7 +344,7 @@ async function onDelete() {
 							Valid until {{ formatDate(enrollment.expires_at) }}. The agent generates its own secret when it
 							uses this token; NetIgnite never shows it.
 						</p>
-						<details v-if="agent.data.value.kind === 'linux'" class="text-xs text-slate-400">
+						<details v-if="agent.data.value.kind !== 'esp32'" class="text-xs text-slate-400">
 							<summary class="cursor-pointer">Agent already installed?</summary>
 							<div class="mt-2 flex items-start gap-2 rounded-lg border border-slate-800 bg-slate-900/60 p-3">
 								<code class="flex-1 break-all font-mono text-slate-200">{{ pairCommand }}</code>

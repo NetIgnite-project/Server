@@ -1,10 +1,20 @@
 import { z } from "zod";
 
 export namespace AgentSettings {
-	/** `esp32`: the ESP32 firmware. `linux`: the Linux agent (systemd service). */
-	export const Kinds = ["esp32", "linux"] as const;
+	/**
+	 * `esp32`: the ESP32 firmware. `linux`, `windows`, `macos`: the NetIgnite agent on a computer
+	 * (systemd service, scheduled task, launchd daemon). Only `linux` has Wake-on-LAN mode.
+	 */
+	export const Kinds = ["esp32", "linux", "windows", "macos"] as const;
 	export const Kind = z.enum(Kinds);
 	export type Kind = z.infer<typeof Kind>;
+
+	/** Kinds that run on the machine they control: a device's "agent on the device". */
+	export const ComputerKinds = ["linux", "windows", "macos"] as const satisfies readonly Kind[];
+
+	export function isComputer(kind: string) {
+		return (ComputerKinds as readonly string[]).includes(kind);
+	}
 
 	/** Connection state of an agent, as shown in the dashboard. */
 	export const ConnectionStates = ["online", "offline", "unenrolled"] as const;

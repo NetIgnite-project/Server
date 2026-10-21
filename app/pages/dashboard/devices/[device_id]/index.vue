@@ -48,7 +48,7 @@ const wolAgentOptions = computed(() => [
 const hostAgentOptions = computed(() => [
 	{ label: "None", value: null },
 	...(agents.data.value ?? [])
-		.filter((agent) => agent.kind === "linux")
+		.filter((agent) => ComputerAgentKinds.includes(agent.kind))
 		.map((agent) => ({ label: agent.name, value: agent.id })),
 ]);
 
@@ -300,7 +300,7 @@ async function leaveDevice() {
 
 				<UFormField
 					name="host_agent_id"
-					label="Linux agent on the device"
+					label="Agent on the device"
 					description="Reports the device's status and enables shut down and reboot."
 					class="flex items-start justify-between gap-4 py-4 max-sm:flex-col"
 					:ui="{ root: 'w-full sm:w-auto', container: 'w-full sm:w-80' }"

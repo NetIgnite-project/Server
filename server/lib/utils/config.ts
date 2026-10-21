@@ -142,10 +142,14 @@ export class ConfigHandler {
 		/** Optional; raises GitHub's API rate limit for the release sync. */
 		GITHUB_TOKEN: CS.string().optional(),
 
-		// The Linux agent's install script (/install/linux.sh) downloads the agent from the GitHub
-		// releases of LINUX_AGENT_REPO: the release tagged LINUX_AGENT_VERSION (e.g. v1.0.0), or the
-		// newest stable release (a pre-release only while the repository has no stable release).
-		LINUX_AGENT_REPO: CS.string().default("NetIgnite-project/Agent-Linux"),
+		// The agent's install scripts (/install/linux.sh, macos.sh, windows.ps1) download it from the
+		// GitHub releases of AGENT_REPO (default NetIgnite-project/Agent-Linux, which has every
+		// platform's binaries): the release tagged AGENT_VERSION (e.g. v1.0.0), or the newest stable
+		// release (a pre-release only while the repository has no stable release).
+		AGENT_REPO: CS.string().optional(),
+		AGENT_VERSION: CS.string().optional(),
+		// The names from the 2.0.0 betas, still read if the new ones aren't set.
+		LINUX_AGENT_REPO: CS.string().optional(),
 		LINUX_AGENT_VERSION: CS.string().optional(),
 
 		SMTP_HOST: CS.string().optional(),
