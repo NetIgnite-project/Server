@@ -79,7 +79,9 @@ stored anywhere. With SSH, the server holds a login to the device and sends it t
 every command, so whoever gets the database and its secrets key can log in. If you use SSH, log in
 as a **dedicated, unprivileged user** that may only run the two shutdown commands (the generated
 `authorized_keys` line and `sudoers` line do exactly that), never as root or an administrator, and
-prefer a generated key over a password.
+prefer a generated key over a password. Windows only shuts down for administrators, so there the
+login can't be restricted: use a separate account only for NetIgnite, a generated key, and accept
+the key only from the agent (`restrict,from="<agent's IP>" ssh-ed25519 …`).
 
 ### Linux agent
 

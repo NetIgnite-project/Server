@@ -150,11 +150,28 @@ async function remove() {
 	await device.refresh?.();
 }
 
-// Logins that can do anything on the device: the stored secret then grants full control.
-const privilegedUser = computed(() =>
-	["root", "administrator", "admin"].includes(
-		form.username.trim().toLowerCase().split("\\").pop() ?? "",
-	),
+// Logins that can do anything on the device: the stored secret then grants full control. Windows
+// only shuts down for administrators, so there the advice is a separate account instead.
+const privilegedUser = computed(
+	() =>
+		form.os === "posix" &&
+		["root", "administrator", "admin"].includes(
+			form.username.trim().toLowerCase().split("\\").pop() ?? "",
+		),
+);
+
+const securityAdvice = computed(() =>
+	form.os === "windows"
+		? {
+				title: "This login has to be an administrator",
+				description:
+					"Windows only lets administrators shut down over SSH, so this login can't be limited to shutdown and reboot: anyone who gets hold of it (e.g. from a server backup and its secrets key) controls the PC. Use a separate account only for NetIgnite, a generated key instead of a password, and accept the key only from the agent: restrict,from=\"<agent's IP address>\" at the start of its line in administrators_authorized_keys.",
+			}
+		: {
+				title: "Prefer the NetIgnite Linux agent",
+				description:
+					"For a Linux machine, install the Linux agent on it and choose it as the device's Linux agent instead: it can only shut down and reboot that machine, and no login to it is stored on the server. With SSH, the server keeps a login to the device (encrypted) and sends it to the agent for every command. If you use SSH, log in as a dedicated user without other rights that may only shut down and reboot (see Prepare the device), never as root or an administrator, and prefer a generated key over a password.",
+			},
 );
 
 async function copy(text: string) {
@@ -183,8 +200,8 @@ async function copy(text: string) {
 				color="info"
 				variant="subtle"
 				icon="i-lucide-shield"
-				title="Prefer the NetIgnite Linux agent"
-				description="For a Linux machine, install the Linux agent on it and choose it as the device's Linux agent instead: it can only shut down and reboot that machine, and no login to it is stored on the server. With SSH, the server keeps a login to the device (encrypted) and sends it to the agent for every command. If you use SSH, log in as a dedicated user without other rights that may only shut down and reboot (see Prepare the device), never as root or an administrator, and prefer a generated key over a password."
+				:title="securityAdvice.title"
+				:description="securityAdvice.description"
 			/>
 
 			<UAlert
@@ -204,7 +221,7 @@ async function copy(text: string) {
 					</UFormField>
 					<UFormField label="Port"><UInput v-model.number="form.port" type="number" min="1" max="65535" class="w-full" /></UFormField>
 				</div>
-				<UFormField label="Username" required description="A dedicated user without other rights, e.g. netignite.">
+				<UFormField label="Username" required :description="form.os === 'windows' ? 'A separate administrator account only for NetIgnite, e.g. netignite.' : 'A dedicated user without other rights, e.g. netignite.'">
 					<UInput v-model="form.username" placeholder="netignite" class="w-full sm:w-80" autocomplete="off" />
 				</UFormField>
 				<UAlert
