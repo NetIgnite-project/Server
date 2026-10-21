@@ -1,0 +1,21 @@
+{
+	"name": "NetIgnite",
+	"short_name": "NetIgnite",
+	"description": "Power on devices from anywhere",
+	"id": "/dashboard",
+	"start_url": "/dashboard",
+	"scope": "/",
+	"display": "standalone",
+	"background_color": "#0b0c1b",
+	"theme_color": "#0b0c1b",
+	"icons": [
+		{ "src": "/static/pwa/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+		{ "src": "/static/pwa/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+		{
+			"src": "/static/pwa/icon-maskable-512.png",
+			"sizes": "512x512",
+			"type": "image/png",
+			"purpose": "maskable"
+		}
+	]
+}

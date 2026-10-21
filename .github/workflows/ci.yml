@@ -1,0 +1,52 @@
+name: CI
+
+on:
+  push:
+    branches: [main, v2]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - run: bun install --frozen-lockfile
+      - run: bun run check:ci
+      - run: bun run typecheck
+      - run: bun test
+
+  # Builds the Docker image like the release does and checks that it starts.
+  image:
+    needs: test
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - run: bun install --frozen-lockfile
+      - run: bun run build
+      - run: docker build -f docker/Dockerfile -t netignite-server:ci .
+      - name: Smoke test
+        run: |
+          docker run -d --name netignite -p 18232:18232 -e NETIGNITE_APP_URL=http://localhost:18232 netignite-server:ci
+          for i in $(seq 1 45); do
+            if curl -fsS http://localhost:18232/api/health; then break; fi
+            sleep 2
+          done
+          echo
+          curl -fsS http://localhost:18232/api/health
+          # Migrations ran and the initial admin was created
+          docker exec netignite test -f /opt/netignite/config/initial_admin_password_reset_token.txt
+          # The dashboard is served
+          curl -fsS -o /dev/null http://localhost:18232/auth/login
+          # The v1 import tool is in the image
+          docker exec netignite bun /opt/netignite/app/.output/import-v1.mjs --help
+      - name: Container log
+        if: always()
+        run: docker logs netignite || true

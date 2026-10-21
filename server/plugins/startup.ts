@@ -1,82 +1,136 @@
-import { AgentControlService } from "../agent-control-service";
-import { ConfigHandler } from "../utils/config";
-import { DBStorage } from "../db";
-import { Logger } from "../utils/logger";
-import { SessionHandler } from "../utils/auth/sessions";
-import crypto from 'crypto';
-import { AuthHandler } from "../utils/auth/handler";
+import { defineNitroPlugin } from "nitropack/runtime";
+import { ConsoleRelay } from "../lib/agents/console";
+import { AgentGatewayRunner } from "../lib/agents/gateway";
+import { API } from "../lib/api";
+import { EmailService } from "../lib/api/utils/email";
+import { DB } from "../lib/db";
+import { DeviceStatusService } from "../lib/devices/status";
+import { FirmwareCatalog } from "../lib/firmware/catalog";
+import { OtaService } from "../lib/firmware/ota";
+import { V1Importer } from "../lib/migration/v1Import";
+import { TaskScheduler } from "../lib/tasks";
+import { Utils } from "../lib/utils";
+import { ConfigHandler } from "../lib/utils/config";
+import { AppConstants } from "../lib/utils/constants";
+import { CronJobHandler } from "../lib/utils/cron";
+import { Logger } from "../lib/utils/logger";
 
-async function createAdminUserIfNoneExists() {
+// Runs once at Nitro boot — replaces Main.main() from the standalone backend shape.
+export default defineNitroPlugin(async (nitroApp) => {
+	let shutdownPromise: Promise<boolean> | null = null;
 
-    const allUsers = await DBStorage.Users.getAll();
+	// Idempotent: every caller awaits the same run. Resolves to false if a step failed.
+	function shutdown(reason: string) {
+		shutdownPromise ??= (async () => {
+			try {
+				Logger.log(`Received ${reason}, shutting down...`);
 
-    if (!allUsers) {
-        Logger.error("Error retrieving users from DB");
-        process.exit(1);
-    }
+				await CronJobHandler.stopAll();
 
-    if (allUsers.length === 0) {
+				DeviceStatusService.stop();
+				ConsoleRelay.stop();
+				AgentGatewayRunner.stop();
 
-        const randomAdminPassword = crypto.randomBytes(32).toString('hex');
+				await API.stop();
 
-        const defaultAdmin = await DBStorage.Users.insert({
-            username: 'admin',
-            password_hash: await AuthHandler.hashPassword(randomAdminPassword),
-            role: 'admin',
-            favorites: []
-        });
+				await EmailService.reset();
+				await TaskScheduler.stopProcessing();
 
-        await Bun.write('./data/initial_admin_credentials',
-            `Username: admin\nPassword: ${randomAdminPassword}\n`
-        );
+				await DB.close();
 
-        Logger.log(
-            `No users found in database. Created default admin user.\n` +
-            `Username: admin\n` +
-            `Password: ${randomAdminPassword}\n` +
-            `Credentials have also been saved to ./data/initial_admin_credentials`
-        );
+				Logger.log("Shutdown complete, exiting.");
+				return true;
+			} catch {
+				Logger.critical("Error during shutdown, forcing exit");
+				return false;
+			}
+		})();
+		return shutdownPromise;
+	}
 
-        if (!defaultAdmin) {
-            Logger.error("Error creating default admin user");
-            process.exit(1);
-        }
-    }
-}
+	nitroApp.hooks.hook("close", async () => {
+		await shutdown("close");
+	});
 
-export default defineNitroPlugin(async () => {
+	// The Bun preset installs no signal or error handlers and never calls the `close` hook.
+	// Registered first: Nitro doesn't await this plugin, so the server already listens during startup.
+	if (!import.meta.dev) {
+		for (const signal of ["SIGINT", "SIGTERM"] as const) {
+			process.once(signal, async () => {
+				process.exit((await shutdown(signal)) ? 0 : 1);
+			});
+		}
+
+		process.once("uncaughtException", async (error) => {
+			Logger.critical(
+				`Uncaught Exception:\n${Error.isError(error) ? (error.stack ?? error.message) : error}`,
+			);
+			await shutdown("uncaughtException");
+			process.exit(1);
+		});
+
+		process.once("unhandledRejection", async (reason) => {
+			Logger.critical(
+				`Unhandled Rejection:\n${Error.isError(reason) ? (reason.stack ?? reason.message) : reason}`,
+			);
+			await shutdown("unhandledRejection");
+			process.exit(1);
+		});
+	}
 
 	const config = await ConfigHandler.loadConfig();
-    if (!config) {
-        Logger.error("Error getting config");
-        process.exit(1);
-    }
-	Logger.log('Config loaded');
 
-    if (config.logLevel) {
-        Logger.setLogLevel(config.logLevel);
-    }
+	Logger.setLogLevel(config.LOG_LEVEL ?? "info");
+	Logger.log(`Starting ${AppConstants.APP_NAME}...`);
 
-    if (AgentControlService.isInitialized()) return;
+	await DB.init(
+		config.DB_PATH,
+		config.DB_AUTO_MIGRATE,
+		config.CONFIG_BASE_DIR,
+		config.DB_MIGRATION_DIR,
+	);
 
-    await DBStorage.init();
-    console.log('DB initialized');
+	const v1Database = await V1Importer.pendingV1Database(config.DB_PATH);
+	if (v1Database) {
+		Logger.warn(
+			`Found a NetIgnite v1 database at ${v1Database} that hasn't been imported: its users, ` +
+				"agents and devices are still in it, not in this server. Import it:\n" +
+				`  Docker:      docker exec <container> bun /opt/netignite/app/.output/import-v1.mjs --from ${v1Database}\n` +
+				`  From source: bun scripts/import-v1.ts --from ${v1Database}\n` +
+				"Guide: https://netignite.dev/docs/server/upgrading (move the file away to hide this warning)",
+		);
+	}
 
-    await createAdminUserIfNoneExists();
-    console.log('Admin user check complete');
+	await Utils.ensureDirectoryExists(config.LOG_DIR ?? "./data/logs");
 
-    await SessionHandler.init();
-    console.log('Session handler initialized');
+	await EmailService.init();
 
-    const agents = await DBStorage.Agents.getAll();
+	await FirmwareCatalog.configure({
+		repo: config.FIRMWARE_REPO,
+		apiURL: "https://api.github.com",
+		dir: config.FIRMWARE_DIR,
+		publicKeyPath: config.FIRMWARE_PUBLIC_KEY ?? null,
+		token: config.GITHUB_TOKEN ?? null,
+	});
 
-    if (!agents) {
-        Logger.error("Error getting agents from DB");
-        process.exit(1);
-    }
+	await CronJobHandler.init();
+	await CronJobHandler.startAll();
 
-    await AgentControlService.init({ ...config, agents });
-    console.log('Control service initialized');
+	// Not awaited: it runs the queued tasks to completion. Started before the API so that no
+	// request can enqueue first (TaskHandler then skips loading the stored pending/paused tasks).
+	TaskScheduler.processQueue().catch((err) => {
+		Logger.error("Task queue processing failed:", err);
+	});
 
+	await API.init([config.APP_URL], config.API_DISABLE_DOCS === true);
+
+	AgentGatewayRunner.start();
+	DeviceStatusService.start();
+	OtaService.init();
+	ConsoleRelay.init();
+
+	if (config.FIRMWARE_SYNC) {
+		// In the background: the server is usable while the firmware downloads.
+		void FirmwareCatalog.sync();
+	}
 });
-

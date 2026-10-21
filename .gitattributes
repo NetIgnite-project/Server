@@ -1,0 +1,7 @@
+# LF everywhere (Biome formats with LF; keeps Windows checkouts clean with core.autocrlf).
+* text=auto eol=lf
+
+*.png binary
+*.ico binary
+*.woff2 binary
+*.bin binary

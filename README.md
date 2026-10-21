@@ -1,230 +1,165 @@
 # NetIgnite Server
 
-NetIgnite Server is the server-side core of the NetIgnite / Device Power Management platform. It provides:
+The NetIgnite server: the dashboard, the REST API and the WebSocket gateway that NetIgnite agents
+(ESP32 firmware, Linux agent) connect to. Power on devices from anywhere, check whether they're
+online, and share them with other users.
 
-- HTTP/REST API for authentication and management of agents & devices
-- WebSocket "Agent Control Service" for bidirectional control of registered agents (servers / microcontrollers)
-- Persistence via embedded SQLite (libsql) database
-- Session-based authentication (HTTP cookies)
-- Automatic startup initialization (DB, default admin, session handler, agent loading)
-- Extensible command system for agents (heartbeat, future commands)
-- Docker-ready deployment with separate volumes for data, configuration & logs
+Documentation: <https://netignite.dev/docs>
 
----
-## Table of Contents
-1. Overview & Architecture
-2. Features
-3. Directory Structure (server portion)
-4. Prerequisites
-5. Installation & Development (Bun / Node)
-6. Docker Deployment
-7. Configuration (`config.json`, ENV variables)
-8. Database
-9. Authentication & Sessions
-10. API Endpoints (excerpt)
-11. Agent Control WebSocket
-12. Logging & Error Handling
-13. Security Notes
-14. Roadmap / Extensions
-15. License
+> **v2 (in development).** This branch is the rewrite on the LeiCraftMC full-stack Nuxt template.
+> v1 agents can't connect to v2; set them up again after upgrading.
 
----
-## 1. Overview & Architecture
-The server is built on Nuxt 3 (Nitro) with experimental WebSocket support enabled (`nitro.experimental.websocket = true`). At startup a bootstrap plugin (`server/plugins/startup.ts`) loads in sequence:
-1. Configuration (`ConfigHandler`)
-2. Database & tables (`DBStorage.init()`)
-3. Default admin (if no users exist) – credentials written to `./data/initial_admin_credentials`
-4. Session management (`SessionHandler.init()`)
-5. Agents from the database and initialization of the `AgentControlService`
+## Stack
 
-The REST API is exposed via Nitro routes under `server/api/**`. The WebSocket service manages connected agents, periodically sends heartbeats and accepts commands.
+- Nuxt 4 (`app/` srcDir) + NuxtUI v4 + Tailwind v4 (CSS-first)
+- Hono + Zod + `hono-openapi` (Scalar) in `server/`, mounted at `/api` via a catch-all Nitro route
+- Agent gateway at `/ws/agent` (Nitro WebSocket, `server/lib/agents/`)
+- Drizzle ORM + `bun-sqlite`
+- Bun runtime (Nitro `bun` preset)
+- Biome formatter/linter
+- AGPL-3.0
 
-## 2. Features
-- Agents (type `server` or `microcontroller`) with secret and owner assignment
-- Basic Auth for WebSocket agent connections (ID:Secret)
-- Session-based user login (cookie `session`)
-- CRUD for agents including online/offline status queries
-- Heartbeat every 60 seconds to connected agents
-- Dynamic log level control (`debug`, `info`, `warn`, `error`, `critical`)
-- Automatic generation of a secure admin password on first start
+## Run with Docker
 
-## 3. Directory Structure (excerpt)
-```
-server/
-  api/
-    auth/ (login, logout, session)
-    agents/ (CRUD & status)
-    devices/, account/, admin/ (...additional routes)
-  agent-control-service/
-    agent.ts (agent model & command dispatch)
-    server.ts (WebSocket handler, heartbeat cron)
-    index.ts (initialization & access)
-  db/
-    index.ts (table setup & access)
-    models/ (*.ts per table)
-  plugins/startup.ts (bootstrap sequence)
-  utils/
-    auth/ (sessions.ts, handler.ts)
-    config.ts (configuration loading logic)
-    logger.ts (log level handling)
+```bash
+docker compose -f docker/docker-compose.yml up -d
 ```
 
-## 4. Prerequisites
-- Node.js >= 18 or Bun >= 1
-- Git
-- (Optional) Docker
+The server listens on port **18232**. On first start it creates the user `admin` and writes a
+password-reset link to `config/initial_admin_password_reset_token.txt` (also printed to the log).
+Set `NETIGNITE_APP_URL` to the server's public URL; production logins need HTTPS.
 
-## 5. Installation & Development
-### Option A: Bun (recommended per Dockerfile)
-```powershell
+### ESP32 web installer
+
+Agents → an ESP32 agent → **Install** flashes the NetIgnite firmware from the browser (ESP Web
+Tools: Chrome, Edge or Firefox 151+ on a computer) and sets up Wi-Fi over Improv; the Wi-Fi
+password goes from the browser to the ESP32 only. Browsers allow USB access only on HTTPS pages
+(or `localhost`), so serve NetIgnite over HTTPS.
+
+The firmware comes from the GitHub releases of
+[Agent-ESP32](https://github.com/NetIgnite-project/Agent-ESP32): the server downloads the newest
+releases into `data/firmware/` on start and every 6 hours (admins: Server Settings → Sync now) and
+checks each file's SHA-256. The flash image also holds the agent's setup data: the server URL, its
+name and a single-use enrollment token (15 minutes). The agent generates its long-term secret
+itself when it enrolls.
+
+| Variable | Default | |
+| --- | --- | --- |
+| `NETIGNITE_FIRMWARE_SYNC` | `true` | Sync automatically; `false` for offline servers |
+| `NETIGNITE_FIRMWARE_REPO` | `NetIgnite-project/Agent-ESP32` | GitHub repository to sync from |
+| `NETIGNITE_FIRMWARE_DIR` | `./data/firmware` | Where releases are stored |
+| `NETIGNITE_FIRMWARE_PUBLIC_KEY` | — | Path of a PEM ECDSA P-256 public key; then only signed releases are accepted |
+| `NETIGNITE_GITHUB_TOKEN` | — | Raises GitHub's API rate limit |
+
+### Firmware updates and console
+
+ESP32 agents with firmware 2.0.0 or newer update over the network: the agent page shows **Update
+to …** when the admin's channel has a newer release (Agents → **Update n agents** updates several
+one after another). The agent downloads the image from this server with its own credential,
+checks its SHA-256 (and signature, if its firmware has a public key compiled in), restarts and goes
+back to the previous firmware if the new one doesn't reach the server within 5 minutes.
+
+The agent's **Console** tab shows its live log (WebSocket `/ws/console`) and changes its log
+level, server address, host name and IP settings, restarts or factory-resets it. A new server
+address or IP setting is only kept if the agent reaches the server with it within 2 minutes.
+
+### SSH shutdown and reboot
+
+A device's **SSH** tab (owner only) stores an SSH login: a key pair the server generates (the tab
+shows the `authorized_keys` and `sudoers` lines for the device) or a password. The device's agent
+(an ESP32 with firmware 2.0.0 or newer, or a Linux agent in Wake-on-LAN mode, in the same
+network) logs in for shutdown and reboot; it runs only the fixed `shutdown` commands. Passwords and private keys are stored encrypted with the server's
+secrets key (`NETIGNITE_SECRETS_KEY`, or `config/secrets.key`; back it up) and are never returned by
+the API. The device's host key is trusted on first use: test the login, compare the fingerprint,
+trust it.
+
+**Prefer the Linux agent** for Linux machines (installed on the device, chosen as its Linux agent):
+it can only shut down and reboot that machine, through polkit, and no login to the device is
+stored anywhere. With SSH, the server holds a login to the device and sends it to the agent for
+every command, so whoever gets the database and its secrets key can log in. If you use SSH, log in
+as a **dedicated, unprivileged user** that may only run the two shutdown commands (the generated
+`authorized_keys` line and `sudoers` line do exactly that), never as root or an administrator, and
+prefer a generated key over a password. Windows only shuts down for administrators, so there the
+login can't be restricted: use a separate account only for NetIgnite, a generated key, and accept
+the key only from the agent (`restrict,from="<agent's IP>" ssh-ed25519 …`).
+
+### Linux agent
+
+The page of a Linux agent shows a one-line installer:
+
+```bash
+curl -fsSL https://<server>/install/linux.sh | sudo sh -s -- <enrollment-token>
+```
+
+`/install/linux.sh` downloads the agent from the [Agent-Linux](https://github.com/NetIgnite-project/Agent-Linux)
+releases (`NETIGNITE_LINUX_AGENT_REPO`; the newest stable release, a pre-release only while there
+is none, or the tag in `NETIGNITE_LINUX_AGENT_VERSION`), checks it against `SHA256SUMS`, pairs it
+and installs the systemd service.
+
+### Upgrading from v1
+
+The v2 image uses the same `/opt/netignite/data` and `/opt/netignite/config` volumes as v1. Its
+database is `data/netignite.sqlite`, so the v1 `data/db.sqlite` stays untouched. Import it once:
+
+```bash
+docker exec netignite-server bun /opt/netignite/app/.output/import-v1.mjs --from /opt/netignite/data/db.sqlite --dry-run
+docker exec netignite-server bun /opt/netignite/app/.output/import-v1.mjs --from /opt/netignite/data/db.sqlite
+```
+
+- Users keep their passwords and are asked for an email address after logging in.
+- The v1 `admin` is merged into the new server's `admin`. Other users with a username that already
+  exists in v2 are only merged with `--merge-users`.
+- Agents are imported but must be set up again; devices keep MAC address, port and agent.
+- Re-running the import is safe; already imported records are skipped.
+
+## Development
+
+```bash
 bun install
-bun run dev  # runs via nuxt dev (port 3000 in development)
-```
-### Option B: Node/NPM
-If you do not use Bun:
-```powershell
-npm install
-npx nuxt dev --host 0.0.0.0 --port 3000
-```
-Production build (artifacts):
-```powershell
-bun run build        # or: npx nuxt build
-```
-Preview (test Nitro output):
-```powershell
-bun run preview      # or: npx nuxt preview
-```
-
-## 6. Docker Deployment
-The provided `Dockerfile` builds a production image:
-- Base: `oven/bun:1`
-- Build artifact: `.output/server/index.mjs`
-- Exposed port: `18232/tcp`
-- Volumes:
-  - `/opt/netignite/data` (SQLite DB, initial admin credentials)
-  - `/opt/netignite/config` (configuration file)
-  - `/opt/netignite/logs` (optional log output)
-
-Build & run example:
-```powershell
-docker build -t netignite:latest ./app
-
-docker run -d ^
-  -p 18232:18232 ^
-  -v netignite_data:/opt/netignite/data ^
-  -v netignite_config:/opt/netignite/config ^
-  -v netignite_logs:/opt/netignite/logs ^
-  --name netignite netignite:latest
-```
-
-## 7. Configuration
-Default file path: `./config/config.json` (override via ENV `CONFIG_FILE_PATH`). Minimal example:
-```json
-{}
-```
-Current possible fields (more planned):
-- `logLevel`: `"debug" | "info" | "warn" | "error" | "critical"`
-- (Agents are loaded from the DB, not the config file)
-
-### Important ENV Variables
-- `CONFIG_FILE_PATH` – custom path to configuration file
-- `NITRO_ENV` – production mode (Docker sets `production`)
-- `NITRO_HOST` – host bind (`0.0.0.0`)
-- `NITRO_PORT` – API / web app port (default in container: `18232`)
-- `NODE_ENV` – influences cookie `secure` flag for sessions
-
-## 8. Database
-- Driver: `@libsql/client` (local SQLite file) at `./data/db.sqlite`
-- Tables automatically created (Users, PasswordResets, Agents, Devices)
-- On first start: admin creation & credential output
-
-## 9. Authentication & Sessions
-- Login: `POST /api/auth/login` with `username`, `password`
-- Successful login sets `session` cookie
-- Session lifetime: 30 days (refreshed on use)
-- Logout: `POST /api/auth/logout` clears the session
-- Session status: `GET /api/auth/session`
-Success response shape:
-```json
-{ "status": "OK", "data": { "userID": 1, "username": "admin", "role": "admin", "favorites": [] } }
-```
-
-## 10. API Endpoints (Agents – excerpt)
-All agent routes require a valid session.
-
-| Method | Path | Description |
-|--------|------|-------------|
-| GET | `/api/agents` | List all own agents |
-| POST | `/api/agents` | Create agent (`name`, `description`, `type`, `secret`) |
-| GET | `/api/agents/status?ids=1,2` | Online status filtered or all own agents |
-| GET | `/api/agents/{id}` | Agent detail |
-| PUT | `/api/agents/{id}` | Update (changing secret disconnects existing connection) |
-| DELETE | `/api/agents/{id}` | Delete agent |
-
-Payload example (POST):
-```json
-{
-  "name": "Server A",
-  "description": "Main host",
-  "type": "server", // or "microcontroller"
-  "secret": "<RANDOM-STRING>"
-}
-```
-Generic success response:
-```json
-{ "status": "OK", "message": "...", "data": null }
-```
-Errors use standard HTTP status codes (`400`, `401`, `404`, `500`).
-
-## 11. Agent Control WebSocket
-The WebSocket service manages online status & heartbeats. Agents connect using a Basic Auth header:
-```
-Authorization: Basic base64("<agentID>:<secret>")
-```
-Flow:
-1. Server validates credentials & closes old connection on reconnect
-2. Stores socket + peer ID for the agent
-3. Cron (every minute) sends HEARTBEAT command
-
-The concrete WebSocket path depends on Nitro deployment / config (experimental feature). Check your reverse proxy and Nitro documentation; by default the server can accept upgrades on the main port.
-
-### Commands
-- HEARTBEAT (Server → Agent)
-- More via `AgentCMDRegistry` (extension potential)
-
-## 12. Logging & Error Handling
-Configurable log levels: `debug`, `info`, `warn`, `error`, `critical`. Startup failures (e.g. config or DB init) trigger process termination (`process.exit(1)`) to avoid inconsistent state.
-
-## 13. Security Notes
-- Change the admin password immediately after first start.
-- Use long cryptographically random secrets for agents.
-- Enable TLS (reverse proxy: Nginx / Caddy) before production use.
-- Set `NODE_ENV=production` so cookies use the `secure` flag (with HTTPS).
-- Restrict network access to the WebSocket port if only internal agents connect.
-
-## 14. Roadmap / Extensions (suggestions)
-- Expanded role / permission matrix (admin vs superadmin vs user granularity)
-- Device-specific Wake-on-LAN actions directly via API
-- Persistent agent command queue
-- Token-based API auth in addition to sessions
-- Encryption at rest (secret rotation)
-- Metrics / Prometheus export
-
-## 15. License
-See the project license file (`LICENSE`).
-
----
-## Quick Start (TL;DR)
-```powershell
-# Development
-bun install
+cp example.env .env
 bun run dev
-
-# First start: check file ./data/initial_admin_credentials
-# Login with admin + generated password
-
-# Docker
-docker build -t netignite:latest ./app
-docker run -d -p 18232:18232 netignite:latest
 ```
 
+The dev server runs on <http://localhost:18232> (port 18232 in dev and prod, an exception to the
+style guide's 12xxx ports kept for v1 compatibility). Endpoints: `/api/v1/**`, `/api/health`,
+`/api/docs/v1` (OpenAPI reference), `/ws/agent`, `/ws/console`, `/install/linux.sh`.
+
+After changing the API, regenerate the typed client (boots the API in-process, no server needed):
+
+```bash
+bun run api-client:generate
+```
+
+## Scripts
+
+- `bun run dev` — dev server on port 18232 (frontend + API + agent gateway)
+- `bun run build` — production build (`.output/`, Bun preset, plus `.output/import-v1.mjs`)
+- `bun run start` — run the built server
+- `bun run import-v1 -- --from <v1 db.sqlite> [--dry-run] [--merge-users]` — import a v1 database
+- `bun run api-client:generate` — regenerate the typed API client
+- `bun run db:generate` / `db:migrate` — Drizzle migrations
+- `bun run check` / `bun run format` — Biome check / format
+- `bun run typecheck` — `nuxt typecheck` + `tsc` (includes `server/`)
+- `bun test` — run tests
+
+## Structure
+
+| Path | What it is |
+| --- | --- |
+| `server/lib/agents/` | Agent protocol, credentials, gateway, live connection registry, console relay, Linux install script |
+| `server/lib/devices/` | Device permissions (sharing roles), status polling, power actions |
+| `server/lib/ssh/` | SSH logins of devices (encrypted secrets, generated Ed25519 keys, host key trust) |
+| `server/lib/firmware/` | Firmware catalog (GitHub release sync), NVS image writer for the web installer, OTA updates |
+| `server/lib/api/versions/v1/routes/` | REST routes (`agents`, `devices`, `firmware`, `auth`, `account`, `admin`) |
+| `server/lib/migration/v1Import.ts` | v1 database import |
+| `app/pages/dashboard/` | Dashboard: overview, devices, agents, settings, admin |
+
+See the LeiCraftMC style guide:
+
+- [docs/01-project-structure.md](https://github.com/LeiCraftMC/Style-Guides/blob/main/docs/01-project-structure.md) — the full-stack Nuxt shape
+- [docs/04-backend-hono.md](https://github.com/LeiCraftMC/Style-Guides/blob/main/docs/04-backend-hono.md) — Mounting Hono in Nitro
+- [docs/06-frontend-nuxt.md](https://github.com/LeiCraftMC/Style-Guides/blob/main/docs/06-frontend-nuxt.md)
+
+## License
+
+AGPL-3.0

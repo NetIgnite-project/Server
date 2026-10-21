@@ -1,0 +1,12 @@
+{
+	"extends": "../.nuxt/tsconfig.json",
+	"compilerOptions": {
+		"noEmit": true,
+		"allowImportingTsExtensions": true,
+		"types": ["bun-types"]
+	},
+	// app/** is type-checked by `nuxt typecheck` (vue-tsc), which provides the
+	// Nuxt auto-import declarations (ref, computed, useState, ...). Plain tsc
+	// cannot resolve those globals, so this pass only covers tests/ and server/.
+	"include": ["../tests/**/*", "../server/**/*"]
+}

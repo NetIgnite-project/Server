@@ -1,76 +1,99 @@
 name: Create Release
 
+# Creates a GitHub release of the branch the workflow runs on and publishes its Docker image.
+# Pre-releases (a version like 2.0.0-beta.1, or the "pre-release" box) can run from any branch and
+# only push the versioned image tag. Stable releases must run from main; they also move `latest`.
+
 on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Release version Format: x.y.z-[alpha|beta|pre].n'
+        description: "Version: x.y.z, or x.y.z-alpha.n / -beta.n / -rc.n / -pre.n for a pre-release"
         required: true
       release_name:
-        description: 'Release title'
+        description: "Release title"
         required: true
       release_notes:
-        description: 'Release notes or changelog'
+        description: "Release notes or changelog"
         required: true
       prerelease:
-        description: 'Is this a pre-release?'
+        description: "Is this a pre-release? (Versions with a suffix always are.)"
         required: false
         default: false
         type: boolean
 
 jobs:
-  build:
+  check:
     runs-on: ubuntu-latest
-
+    outputs:
+      prerelease: ${{ steps.check.outputs.prerelease }}
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+      - id: check
+        env:
+          VERSION: ${{ inputs.version }}
+          PRERELEASE: ${{ inputs.prerelease }}
+          REF: ${{ github.ref }}
+        run: |
+          if ! [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-(alpha|beta|rc|pre)\.[0-9]+)?$ ]]; then
+            echo "::error::Invalid version '$VERSION'. Use x.y.z or x.y.z-beta.n."
+            exit 1
+          fi
+          prerelease=false
+          if [[ "$PRERELEASE" == "true" || "$VERSION" == *-* ]]; then prerelease=true; fi
+          if [[ "$prerelease" == "false" && "$REF" != "refs/heads/main" ]]; then
+            echo "::error::Stable releases move the image's 'latest' tag and can only be created from main. Use a pre-release version (e.g. $VERSION-beta.1) on $REF."
+            exit 1
+          fi
+          echo "prerelease=$prerelease" >> "$GITHUB_OUTPUT"
+          echo "Releasing v$VERSION from $REF (pre-release: $prerelease)"
 
-    - name: Set up Bun
-      uses: oven-sh/setup-bun@v2
-      with:
-        bun-version: latest
-
-    - name: Install dependencies
-      run: bun install
-
-    - name: Test code
-      run: bun test
-
-    - name: Build Nuxt application
-      run: bun run build
-    
-    - name: Create Archive of .output
-      run: |
-        tar -czf app.tar.gz .output
-
-    - name: Upload build artifacts
-      uses: actions/upload-artifact@v4
-      with:
-        name: app
-        path: ./app.tar.gz
-        retention-days: 1  # Set to 1 day for temporary storage
+  build:
+    needs: check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - run: bun install --frozen-lockfile
+      - run: bun test
+      - run: bun run build
+      # The server applies the database migrations on startup, so they belong with the build.
+      - run: tar -czf app.tar.gz .output drizzle/migrations
+      - uses: actions/upload-artifact@v4
+        with:
+          name: app
+          path: ./app.tar.gz
+          retention-days: 1
 
   release:
-    needs: build
+    needs: [check, build]
     runs-on: ubuntu-latest
-
     permissions:
       contents: write
-
     steps:
-    - name: Download build artifacts
-      uses: actions/download-artifact@v4
-      with:
-        name: app
+      - uses: actions/download-artifact@v4
+        with:
+          name: app
+      - uses: ncipollo/release-action@v1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          tag: v${{ inputs.version }}
+          # Tag the commit this workflow runs on, not the default branch.
+          commit: ${{ github.sha }}
+          name: ${{ inputs.release_name }}
+          body: ${{ inputs.release_notes }}
+          prerelease: ${{ needs.check.outputs.prerelease }}
+          artifacts: ./app.tar.gz
 
-    - name: Create GitHub Release
-      id: create_release
-      uses: ncipollo/release-action@v1
-      with:
-        token: ${{ secrets.GITHUB_TOKEN }}
-        tag: v${{ github.event.inputs.version }}
-        name: ${{ github.event.inputs.release_name }}
-        body: ${{ github.event.inputs.release_notes }}
-        prerelease: ${{ github.event.inputs.prerelease }}
-        artifacts: ./app.tar.gz
+  docker:
+    needs: [check, release]
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+    uses: ./.github/workflows/docker-publish.yml
+    with:
+      version: ${{ inputs.version }}
+      pre_release: ${{ needs.check.outputs.prerelease }}
+    secrets: inherit

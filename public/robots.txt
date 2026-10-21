@@ -1,3 +1,5 @@
 User-Agent: *
+Allow: /
+Disallow: /dashboard
 
-Disallow: /
+sitemap: https://www.leicraft.de/static/utils/sitemap.xml

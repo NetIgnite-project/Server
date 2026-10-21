@@ -1,11 +1,33 @@
+# Runs the published image (built by .github/workflows/docker-publish.yml). Ports and DB paths are
+# baked into the image (docker/Dockerfile ENV) — set only what differs for this deployment.
+# NETIGNITE_APP_URL must be the public URL of the server (e.g. https://netignite.example.com).
 services:
+  
   netignite-server:
     image: ghcr.io/netignite-project/server:latest
     container_name: netignite-server
     restart: unless-stopped
     ports:
       - "18232:18232"
+    environment:
+      NETIGNITE_LOG_LEVEL: info
+
+      NETIGNITE_API_DISABLE_DOCS: false
+
+      NETIGNITE_APP_URL: http://localhost:18232
+
+      # ESP32 firmware for the web installer is synced from GitHub releases. Optional:
+      # NETIGNITE_FIRMWARE_SYNC: false
+      # NETIGNITE_FIRMWARE_PUBLIC_KEY: /opt/netignite/config/firmware-signing.pub.pem
+
+      # Optional: email (password resets). Without it, email features are off.
+      # NETIGNITE_SMTP_HOST: "mail.example.com"
+      # NETIGNITE_SMTP_PORT: 465
+      # NETIGNITE_SMTP_USERNAME: "YourSMTPUsernameHere"
+      # NETIGNITE_SMTP_PASSWORD: "YourSMTPPasswordHere"
+      # NETIGNITE_SMTP_FROM: '"NetIgnite" <netignite@example.com>'
+      # NETIGNITE_SMTP_SECURE: true
+
     volumes:
-      - /opt/netignite/data:/opt/netignite/data
-      - /opt/netignite/config:/opt/netignite/config
-      - /opt/netignite/logs:/opt/netignite/logs
+      - ./data:/opt/netignite/data
+      - ./config:/opt/netignite/config

@@ -1,0 +1,50 @@
+{
+	"mcpServers": {
+		"nuxt": {
+			"type": "url",
+			"url": "https://nuxt.com/mcp"
+		},
+		"nuxt-ui": {
+			"type": "url",
+			"url": "https://ui.nuxt.com/mcp"
+		}
+	},
+	"commands": {
+		"api-client": {
+			"description": "Regenerate the typed API client",
+			"prompt": "Regenerate and verify the generated API client for this full-stack Nuxt project.\n\n1. Run `bun run api-client:generate` (scripts/api-client-generate.ts boots the API in-process, reads its OpenAPI spec, and patches the generated files — no dev server needed).\n2. Do not hand-edit generated `*.gen.ts` files under `app/api-client/`.\n3. If generation fails, diagnose whether the Hono backend or the OpenAPI route is the issue.\n4. Summarize the outcome and any follow-up needed."
+		},
+		"db": {
+			"description": "Run Drizzle migrations",
+			"prompt": "Run the Drizzle migration flow for this project.\n\n1. Run `bun run db:generate` to generate migrations from `server/lib/db/schema.ts` into `drizzle/migrations/`.\n2. Run `bun run db:migrate` to apply them (the app also auto-migrates on startup when `NETIGNITE_DB_AUTO_MIGRATE` is true — the default).\n3. Summarize what was generated or applied."
+		},
+		"verify": {
+			"description": "Run the repo verification flow",
+			"prompt": "Run the standard verification flow for this Nuxt 4 + Bun project.\n\n1. Run `bun run typecheck` (runs `nuxt typecheck` then `tsc -p ./tsconfig/tsconfig.typecheck.json`).\n2. Run `bun test`.\n3. Summarize any failures or warnings.\n4. If this command was triggered after a code change, fix issues that are clearly caused by that change before summarizing."
+		},
+		"test": {
+			"description": "Run the test suite",
+			"prompt": "Run the test suite for this Nuxt 4 + Bun project.\n\n1. Run `bun test`.\n2. If tests fail, diagnose and fix the root cause.\n3. Summarize pass/fail status and any fixes applied."
+		},
+		"typecheck": {
+			"description": "Run the TypeScript type checker",
+			"prompt": "Run the full typecheck flow for this Nuxt 4 + Bun project.\n\n1. Run `bun run typecheck` which runs `nuxt typecheck` then `tsc -p ./tsconfig/tsconfig.typecheck.json`.\n2. If there are type errors, diagnose and fix them before summarizing.\n3. Report the pass/fail status and what was fixed, if anything."
+		},
+		"dev": {
+			"description": "Start or inspect the dev setup",
+			"prompt": "Work on the local development setup for this project.\n\n1. If needed, install dependencies with `bun install`.\n2. Use `bun run dev` for the dev server on port 18232.\n3. If there is a dev-server issue, inspect the Nuxt config, runtime env, and Bun-specific wiring before making changes.\n4. Summarize what you started, changed, or found."
+		}
+	},
+	"fileScan": {
+		"exclude": [
+			".git/**",
+			"node_modules/**",
+			".nuxt/**",
+			".output/**",
+			".nitro/**",
+			".data/**",
+			".cache/**",
+			"dist/**"
+		]
+	}
+}

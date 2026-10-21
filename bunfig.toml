@@ -1,0 +1,4 @@
+[test]
+preload = ["./tests/helpers/preload.ts"]
+# Keep the test harness out of the coverage numbers (`bun run test:ci`).
+coveragePathIgnorePatterns = ["tests/**"]
