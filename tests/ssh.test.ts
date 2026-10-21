@@ -149,7 +149,10 @@ describe("SSH login", () => {
 		});
 		expect(saved.auth_type).toBe("key");
 		expect(saved.effective_host).toBe("nas.local");
-		expect(saved.authorized_keys).toBe(`restrict ${saved.public_key}`);
+		// A forced command lets exactly the two commands through (root: without sudo).
+		expect(saved.authorized_keys).toBe(
+			`restrict,command="case \\"$SSH_ORIGINAL_COMMAND\\" in 'shutdown -h now'|'shutdown -r now') exec $SSH_ORIGINAL_COMMAND ;; *) echo 'Only shutdown and reboot are allowed' >&2; exit 1 ;; esac" ${saved.public_key}`,
+		);
 		expect(saved.sudoers).toBeNull(); // root needs no sudo
 		expect(JSON.stringify(saved)).not.toContain("PRIVATE KEY");
 

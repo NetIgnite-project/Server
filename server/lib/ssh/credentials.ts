@@ -142,11 +142,20 @@ export class SshCredentials {
 			authorized_keys: null,
 			sudoers: null,
 		};
-		if (credential.public_key) {
-			// `restrict`: no forwarding, no PTY; commands still run.
+		const sudo = credential.sudo && credential.username !== "root";
+		if (credential.public_key && credential.os === "posix") {
+			// `restrict`: no forwarding, no PTY. The forced command lets exactly the agent's two
+			// commands through, so the key is useless for anything else. Logins for status checks open
+			// no session, so it doesn't run for them.
+			const prefix = sudo ? "sudo -n " : "";
+			const allowed = `'${prefix}shutdown -h now'|'${prefix}shutdown -r now'`;
+			const command = `case \\"$SSH_ORIGINAL_COMMAND\\" in ${allowed}) exec $SSH_ORIGINAL_COMMAND ;; *) echo 'Only shutdown and reboot are allowed' >&2; exit 1 ;; esac`;
+			hints.authorized_keys = `restrict,command="${command}" ${credential.public_key}`;
+		} else if (credential.public_key) {
+			// Windows' OpenSSH runs forced commands with cmd.exe; restrict forwarding only.
 			hints.authorized_keys = `restrict ${credential.public_key}`;
 		}
-		if (credential.os === "posix" && credential.sudo && credential.username !== "root") {
+		if (credential.os === "posix" && sudo) {
 			const commands = ["/usr/sbin/shutdown", "/sbin/shutdown"].flatMap((path) => [
 				`${path} -h now`,
 				`${path} -r now`,
