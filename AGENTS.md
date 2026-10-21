@@ -60,8 +60,18 @@ Follow the LeiCraftMC Style Guides: https://github.com/LeiCraftMC/Style-Guides.
   prebuilt bundle `esp-web-tools/dist/web/install-button.js`; the package's ES modules need an
   older `@material/web` than npm resolves. All manifest parts are `blob:` URLs, so the enrollment
   token never appears in a URL.
+- **OTA** (`server/lib/firmware/ota.ts`): `OTA_BEGIN` sends a path on this server; the agent
+  downloads `/api/v1/firmware/<version>/files/<file>` with its own agent credential (the auth
+  middleware treats agent tokens as unauthenticated; only that route accepts them). Progress is
+  in memory; HELLO with the new version (or `info.ota_failed_version` after a rollback) ends an
+  update.
+- **Console** (`server/lib/agents/console.ts`, `/ws/console`): the browser authenticates with its
+  first message (`{type:"auth", token, agent_id}`), owner only, Origin must be NETIGNITE_APP_URL;
+  the session is checked again every minute.
+- **Enrollment** takes the agent's `kind`; a token of another kind gets 409 and stays valid.
 - Run Biome's autofix only on the files you changed: on the whole tree it rewrites `@ts-ignore` to
   `@ts-expect-error`, which breaks `nuxt typecheck`.
 - Tests: `tests/netignite.test.ts` (API + gateway with `tests/helpers/fake-agent.ts`),
-  `tests/v1-import.test.ts`, `tests/firmware.test.ts` (catalog against a fake GitHub, flash image)
-  and `tests/nvs.test.ts`.
+  `tests/v1-import.test.ts`, `tests/firmware.test.ts` (catalog against a fake GitHub, flash image),
+  `tests/nvs.test.ts` and `tests/agent-control.test.ts` (OTA, console, device control, install
+  script).

@@ -62,6 +62,22 @@ export class FirmwareCatalog {
 		return releases.find((release) => channel === "prerelease" || !release.prerelease) ?? null;
 	}
 
+	/** The newest release of the admin's channel, or null. */
+	static async recommendedRelease() {
+		const { firmware_channel } = await RuntimeMetadata.getSettings();
+		return this.recommended(await this.list(), firmware_channel);
+	}
+
+	/** Whether `version` is newer than the agent's `current` version (semver; unknown counts as older). */
+	static isNewer(version: string, current: string | null) {
+		if (!current) return true;
+		try {
+			return Bun.semver.order(version, current) > 0;
+		} catch {
+			return false;
+		}
+	}
+
 	/**
 	 * Path of a file of a synced release: one of its flash images or its signature. Null if the
 	 * release or file is unknown.

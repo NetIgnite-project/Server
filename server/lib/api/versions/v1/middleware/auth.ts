@@ -1,4 +1,5 @@
 import { createMiddleware } from "hono/factory";
+import { AgentAuth } from "../../../../agents/auth";
 import { APIResponse } from "../../../utils/api-res";
 import { AuthHandler } from "../../../utils/authHandler";
 
@@ -43,6 +44,15 @@ export const authMiddlewareV1 = createMiddleware(async (c, next) => {
 	}
 
 	const token = authHeader.substring("Bearer ".length);
+
+	// Agent credentials never authenticate a user; the few routes agents call check them themselves.
+	if (token.startsWith(AgentAuth.AGENT_TOKEN_PREFIX)) {
+		AuthHandler.AuthContext.set(c, {
+			type: "unauthenticated",
+		} satisfies AuthHandler.UnauthenticatedAuthContext);
+
+		return await next();
+	}
 
 	const authContext = await AuthHandler.getAuthContext(token);
 

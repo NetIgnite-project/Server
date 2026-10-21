@@ -34,14 +34,16 @@ export class ProvisioningImage {
 	 * characters. "Garage ESP32" becomes "Garage-ESP32"; an empty result keeps the firmware's default.
 	 */
 	static hostname(name: string) {
-		return name
-			.normalize("NFKD")
-			// Accents split off by NFKD: "Büro" → "Buro".
-			.replace(/\p{M}/gu, "")
-			.replace(/[^A-Za-z0-9-]+/g, "-")
-			.replace(/-{2,}/g, "-")
-			.slice(0, 63)
-			.replace(/^-+|-+$/g, "");
+		return (
+			name
+				.normalize("NFKD")
+				// Accents split off by NFKD: "Büro" → "Buro".
+				.replace(/\p{M}/gu, "")
+				.replace(/[^A-Za-z0-9-]+/g, "-")
+				.replace(/-{2,}/g, "-")
+				.slice(0, 63)
+				.replace(/^-+|-+$/g, "")
+		);
 	}
 }
 

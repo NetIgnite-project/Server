@@ -32,6 +32,35 @@ const agents = await useAPIAsyncData<Agent[]>("agents", async () => {
 
 useInterval(() => agents.refresh(), 20_000);
 
+// Online agents with a newer recommended firmware; updated one after another.
+const updatable = computed(() =>
+	(agents.data.value ?? []).filter(
+		(agent) =>
+			agent.update_available &&
+			agent.state === "online" &&
+			!(agent.update && agent.update.state !== "done" && agent.update.state !== "failed"),
+	),
+);
+const updatingAll = ref(false);
+
+async function updateAll() {
+	updatingAll.value = true;
+	const res = await useAPI((api) =>
+		api.postAgentsBulkUpdate({ body: { agent_ids: updatable.value.map((agent) => agent.id) } }),
+	);
+	updatingAll.value = false;
+	if (!res.success) {
+		toast.add({ title: "Couldn't start the updates", description: res.message, color: "error" });
+		return;
+	}
+	toast.add({
+		title: `Updating ${res.data.queued.length} agent${res.data.queued.length === 1 ? "" : "s"} to ${res.data.version}`,
+		description: "One after another; each agent restarts once its update is installed.",
+		icon: "i-lucide-download",
+	});
+	await agents.refresh();
+}
+
 const stateOptions = Object.entries(AgentStates).map(([value, state]) => ({
 	label: state.label,
 	value,
@@ -64,6 +93,15 @@ const stateOptions = Object.entries(AgentStates).map(([value, state]) => ({
 					@refresh="agents.refresh()"
 				>
 					<template #header-right>
+						<UButton
+							v-if="updatable.length > 0"
+							:label="`Update ${updatable.length} agent${updatable.length === 1 ? '' : 's'}`"
+							icon="i-lucide-download"
+							color="neutral"
+							variant="outline"
+							:loading="updatingAll"
+							@click="updateAll"
+						/>
 						<UButton label="Add agent" icon="i-lucide-plus" to="/dashboard/agents/new" />
 					</template>
 
@@ -91,6 +129,18 @@ const stateOptions = Object.entries(AgentStates).map(([value, state]) => ({
 
 					<template #version-cell="{ row }">
 						<span class="font-mono text-sm text-slate-300">{{ row.original.version ?? "—" }}</span>
+						<UBadge
+							v-if="row.original.update && !['done', 'failed'].includes(row.original.update.state)"
+							color="info"
+							variant="soft"
+							size="sm"
+							class="ml-2"
+						>
+							updating{{ row.original.update.state === "downloading" ? ` ${row.original.update.percent}%` : "" }}
+						</UBadge>
+						<UBadge v-else-if="row.original.update_available" color="primary" variant="soft" size="sm" class="ml-2">
+							{{ row.original.update_available }} available
+						</UBadge>
 					</template>
 
 					<template #last_seen_at-cell="{ row }">

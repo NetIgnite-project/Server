@@ -1,10 +1,12 @@
 import { defineNitroPlugin } from "nitropack/runtime";
+import { ConsoleRelay } from "../lib/agents/console";
 import { AgentGatewayRunner } from "../lib/agents/gateway";
 import { API } from "../lib/api";
 import { EmailService } from "../lib/api/utils/email";
 import { DB } from "../lib/db";
 import { DeviceStatusService } from "../lib/devices/status";
 import { FirmwareCatalog } from "../lib/firmware/catalog";
+import { OtaService } from "../lib/firmware/ota";
 import { TaskScheduler } from "../lib/tasks";
 import { Utils } from "../lib/utils";
 import { ConfigHandler } from "../lib/utils/config";
@@ -25,6 +27,7 @@ export default defineNitroPlugin(async (nitroApp) => {
 				await CronJobHandler.stopAll();
 
 				DeviceStatusService.stop();
+				ConsoleRelay.stop();
 				AgentGatewayRunner.stop();
 
 				await API.stop();
@@ -111,6 +114,8 @@ export default defineNitroPlugin(async (nitroApp) => {
 
 	AgentGatewayRunner.start();
 	DeviceStatusService.start();
+	OtaService.init();
+	ConsoleRelay.init();
 
 	if (config.FIRMWARE_SYNC) {
 		// In the background: the server is usable while the firmware downloads.

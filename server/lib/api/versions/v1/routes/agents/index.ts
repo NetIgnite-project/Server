@@ -4,9 +4,12 @@ import { Hono } from "hono";
 import { validator } from "hono-openapi";
 import z from "zod";
 import { AgentAuth } from "../../../../../agents/auth";
+import { AgentRequestError } from "../../../../../agents/connection";
+import type { AgentProtocol } from "../../../../../agents/protocol";
 import { AgentCloseCodes, AgentRegistry } from "../../../../../agents/registry";
 import { DB } from "../../../../../db";
 import { FirmwareCatalog } from "../../../../../firmware/catalog";
+import { OtaError, OtaService } from "../../../../../firmware/ota";
 import { ProvisioningImage } from "../../../../../firmware/provisioning";
 import { ConfigHandler } from "../../../../../utils/config";
 import { Logger } from "../../../../../utils/logger";
@@ -18,7 +21,15 @@ import { AgentsModel } from "./model";
 
 export const router = new Hono().basePath("/agents");
 
-export function toAgentResponse(agent: DB.Models.Agent): AgentsModel.Agent {
+/**
+ * `recommended`: the recommended firmware version, to fill `update_available` (list and detail
+ * responses pass it).
+ */
+export function toAgentResponse(
+	agent: DB.Models.Agent,
+	recommended: string | null = null,
+): AgentsModel.Agent {
+	const canUpdate = agent.kind === "esp32" && agent.capabilities.includes("ota");
 	return {
 		id: agent.id,
 		name: agent.name,
@@ -32,14 +43,60 @@ export function toAgentResponse(agent: DB.Models.Agent): AgentsModel.Agent {
 		last_seen_at: agent.last_seen_at,
 		enrolled_at: agent.enrolled_at,
 		created_at: agent.created_at,
+		update: OtaService.get(agent.id),
+		update_available:
+			canUpdate && recommended && FirmwareCatalog.isNewer(recommended, agent.version)
+				? recommended
+				: null,
 	};
 }
+
+/** Answers a failed agent request like the device actions do. */
+function agentRequestError(c: Context, error: unknown) {
+	if (!(error instanceof AgentRequestError)) throw error;
+	switch (error.reason) {
+		case "unsupported":
+			return APIResponse.conflict(c, "This agent doesn't support that");
+		case "rejected":
+			return APIResponse.badGateway(c, error.message);
+		case "offline":
+			return APIResponse.serviceUnavailable(c, "The agent is offline");
+		case "timeout":
+			return APIResponse.gatewayTimeout(c, "The agent didn't answer in time");
+	}
+}
+
+/** Sends a request to the agent's live connection. */
+function requestAgent<C extends AgentProtocol.Command>(
+	agentID: number,
+	cmd: C,
+	payload: AgentProtocol.Commands[C]["req"],
+	timeoutMs?: number,
+) {
+	const connection = AgentRegistry.get(agentID);
+	if (!connection) {
+		return Promise.reject(new AgentRequestError("offline", "The agent is offline"));
+	}
+	return connection.request(cmd, payload, timeoutMs);
+}
+
+const AGENT_REQUEST_ERRORS = [
+	APIResponseSpec.conflict("The agent doesn't support this"),
+	APIResponseSpec.badGateway("The agent reported an error"),
+	APIResponseSpec.serviceUnavailable("The agent is offline"),
+	APIResponseSpec.gatewayTimeout("The agent didn't answer in time"),
+] as const;
 
 // --- Enrollment (called by agents, no user authentication) --------------------------------------
 
 const ENROLL_WINDOW_MS = 5 * 60 * 1000;
 const ENROLL_MAX_ATTEMPTS = 20;
 const enrollAttempts = new Map<string, { count: number; resetAt: number }>();
+
+/** For tests, which enroll more agents than one client may. */
+export function resetEnrollRateLimit() {
+	enrollAttempts.clear();
+}
 
 function registerEnrollAttempt(c: Context) {
 	// @ts-ignore bun/hono provides a native request with connection info
@@ -68,6 +125,7 @@ router.post(
 		responses: APIResponseSpec.describeWithWrongInputs(
 			APIResponseSpec.success("Agent enrolled", AgentsModel.Enroll.Response),
 			APIResponseSpec.unauthorized("Unauthorized: Unknown, used or expired enrollment token"),
+			APIResponseSpec.conflict("The token is for another kind of agent (it stays valid)"),
 			APIResponseSpec.tooManyRequests("Too many enrollment attempts"),
 		),
 	}),
@@ -79,7 +137,7 @@ router.post(
 			return APIResponse.tooManyRequests(c, "Too many enrollment attempts, try again later");
 		}
 
-		const { enrollment_token, secret } = c.req.valid("json");
+		const { enrollment_token, secret, kind } = c.req.valid("json");
 		if (!AgentAuth.SECRET_PATTERN.test(secret)) {
 			return APIResponse.badRequest(
 				c,
@@ -87,9 +145,16 @@ router.post(
 			);
 		}
 
-		const result = await AgentAuth.enroll(enrollment_token, secret);
+		const result = await AgentAuth.enroll(enrollment_token, secret, kind);
 		if (!result) {
 			return APIResponse.unauthorized(c, "Unknown, used or expired enrollment token");
+		}
+		if (result.wrongKind) {
+			return APIResponse.conflict(
+				c,
+				`This enrollment token is for ${result.wrongKind === "esp32" ? "an ESP32" : "a Linux"} agent. ` +
+					"Create the token on the page of this agent.",
+			);
 		}
 
 		Logger.info(`Agent ${result.agent.id} enrolled`);
@@ -127,7 +192,12 @@ router.get(
 			.where(eq(DB.Tables.agents.owner_id, getUserID(c)))
 			.orderBy(DB.Tables.agents.name);
 
-		return APIResponse.success(c, "Agents retrieved", agents.map(toAgentResponse));
+		const recommended = (await FirmwareCatalog.recommendedRelease())?.version ?? null;
+		return APIResponse.success(
+			c,
+			"Agents retrieved",
+			agents.map((agent) => toAgentResponse(agent, recommended)),
+		);
 	},
 );
 
@@ -155,6 +225,69 @@ router.post(
 			.get();
 
 		return APIResponse.created(c, "Agent created", toAgentResponse(agent));
+	},
+);
+
+router.post(
+	"/bulk-update",
+
+	APIRouteSpec.authenticated({
+		summary: "Update the firmware of several agents",
+		description:
+			"Updates the caller's ESP32 agents one after another (each update has to finish first) to the " +
+			"given or the recommended release. Offline agents and agents that already run it are skipped. " +
+			"Follow the progress in each agent's `update`.",
+		tags: [DOCS_TAGS.AGENTS],
+		responses: APIResponseSpec.describeWithWrongInputs(
+			APIResponseSpec.accepted("Updates queued", AgentsModel.BulkUpdate.Response),
+			APIResponseSpec.notFound("Firmware release not found"),
+		),
+	}),
+
+	validator("json", AgentsModel.BulkUpdate.Body),
+
+	async (c) => {
+		const body = c.req.valid("json");
+		const release = body.version
+			? await FirmwareCatalog.get(body.version)
+			: await FirmwareCatalog.recommendedRelease();
+		if (!release) return APIResponse.notFound(c, "Firmware release not found");
+
+		const agents = await DB.instance()
+			.select()
+			.from(DB.Tables.agents)
+			.where(eq(DB.Tables.agents.owner_id, getUserID(c)));
+		const byID = new Map(agents.map((agent) => [agent.id, agent]));
+
+		const queued: DB.Models.Agent[] = [];
+		const skipped: AgentsModel.BulkUpdate.Response["skipped"] = [];
+		for (const id of new Set(body.agent_ids)) {
+			const agent = byID.get(id);
+			const connection = agent ? AgentRegistry.get(agent.id) : null;
+			const current = agent ? OtaService.get(agent.id) : null;
+			const reason = !agent
+				? "Agent not found"
+				: agent.kind !== "esp32"
+					? "Not an ESP32 agent"
+					: !connection
+						? "Offline"
+						: !connection.hasCapability("ota")
+							? "Its firmware can't be updated over the network"
+							: connection.hello?.version === release.version
+								? "Already up to date"
+								: current && OtaService.isRunning(current)
+									? "An update is already running"
+									: null;
+			if (reason || !agent) skipped.push({ agent_id: id, reason: reason ?? "Agent not found" });
+			else queued.push(agent);
+		}
+
+		OtaService.startMany(queued, release);
+		return APIResponse.accepted(c, "Updates queued", {
+			version: release.version,
+			queued: queued.map((agent) => agent.id),
+			skipped,
+		} satisfies AgentsModel.BulkUpdate.Response);
 	},
 );
 
@@ -195,7 +328,10 @@ router.get(
 		),
 	}),
 
-	async (c) => APIResponse.success(c, "Agent retrieved", toAgentResponse(getAgent(c))),
+	async (c) => {
+		const recommended = (await FirmwareCatalog.recommendedRelease())?.version ?? null;
+		return APIResponse.success(c, "Agent retrieved", toAgentResponse(getAgent(c), recommended));
+	},
 );
 
 router.put(
@@ -350,5 +486,205 @@ router.post(
 			server_url: serverURL,
 			expires_at: enrollment.expires_at,
 		} satisfies AgentsModel.FlashImage.Response);
+	},
+);
+
+// --- Firmware updates, console and device control (ESP32) ----------------------------------------
+
+router.post(
+	"/:agentID/update",
+
+	APIRouteSpec.authenticated({
+		summary: "Update an agent's firmware",
+		description:
+			"Starts an OTA update to the given or the recommended release. The agent downloads and checks the " +
+			"image, restarts, and goes back to its previous firmware if the new one doesn't reach the server. " +
+			"Follow the progress in the agent's `update`.",
+		tags: [DOCS_TAGS.AGENTS],
+		responses: APIResponseSpec.describeWithWrongInputs(
+			APIResponseSpec.accepted("Update started", AgentsModel.FirmwareUpdate),
+			APIResponseSpec.notFound("Agent or firmware release not found"),
+			APIResponseSpec.conflict("The agent can't be updated now"),
+			APIResponseSpec.badGateway("The agent couldn't start the update"),
+			APIResponseSpec.serviceUnavailable("The agent is offline"),
+		),
+	}),
+
+	validator("json", AgentsModel.StartUpdate.Body),
+
+	async (c) => {
+		const agent = getAgent(c);
+		if (agent.kind !== "esp32") {
+			return APIResponse.badRequest(c, "Only ESP32 agents are updated by NetIgnite");
+		}
+
+		const { version } = c.req.valid("json");
+		const release = version
+			? await FirmwareCatalog.get(version)
+			: await FirmwareCatalog.recommendedRelease();
+		if (!release) return APIResponse.notFound(c, "Firmware release not found");
+
+		try {
+			const update = await OtaService.start(agent, release);
+			return APIResponse.accepted(c, "Update started", update);
+		} catch (error) {
+			if (!(error instanceof OtaError)) throw error;
+			switch (error.reason) {
+				case "offline":
+					return APIResponse.serviceUnavailable(c, error.message);
+				case "rejected":
+					return APIResponse.badGateway(c, error.message);
+				default:
+					return APIResponse.conflict(c, error.message);
+			}
+		}
+	},
+);
+
+router.get(
+	"/:agentID/logs",
+
+	APIRouteSpec.authenticated({
+		summary: "Get an agent's log",
+		description:
+			"The agent's most recent log lines. For a live view, use the `/ws/console` WebSocket.",
+		tags: [DOCS_TAGS.AGENTS],
+		responses: APIResponseSpec.describeBasic(
+			APIResponseSpec.success("Log retrieved", AgentsModel.Logs.Response),
+			APIResponseSpec.notFound("Agent not found"),
+			...AGENT_REQUEST_ERRORS,
+		),
+	}),
+
+	async (c) => {
+		try {
+			const result = await requestAgent(getAgent(c).id, "GET_LOGS", {});
+			return APIResponse.success(c, "Log retrieved", {
+				lines: result.lines ?? [],
+				level: result.level ?? null,
+			} satisfies AgentsModel.Logs.Response);
+		} catch (error) {
+			return agentRequestError(c, error);
+		}
+	},
+);
+
+router.get(
+	"/:agentID/info",
+
+	APIRouteSpec.authenticated({
+		summary: "Get an agent's current diagnostics",
+		description: "Asks the agent for its current state (network, memory, uptime, firmware).",
+		tags: [DOCS_TAGS.AGENTS],
+		responses: APIResponseSpec.describeBasic(
+			APIResponseSpec.success("Info retrieved", AgentsModel.Info.Response),
+			APIResponseSpec.notFound("Agent not found"),
+			...AGENT_REQUEST_ERRORS,
+		),
+	}),
+
+	async (c) => {
+		const agent = getAgent(c);
+		try {
+			const result = await requestAgent(agent.id, "GET_INFO", {});
+			if (result.info) {
+				await DB.instance()
+					.update(DB.Tables.agents)
+					.set({ info: result.info })
+					.where(eq(DB.Tables.agents.id, agent.id));
+			}
+			return APIResponse.success(c, "Info retrieved", {
+				version: result.version ?? null,
+				info: result.info ?? {},
+			} satisfies AgentsModel.Info.Response);
+		} catch (error) {
+			return agentRequestError(c, error);
+		}
+	},
+);
+
+router.put(
+	"/:agentID/device-config",
+
+	APIRouteSpec.authenticated({
+		summary: "Change an agent's settings",
+		description:
+			"Changes settings stored on the agent. A new server URL or IP setting is only kept if the agent " +
+			"reaches the server with it within 2 minutes; otherwise it restarts with the previous settings. " +
+			"Wi-Fi is changed over USB with the web installer (Improv), never through the server.",
+		tags: [DOCS_TAGS.AGENTS],
+		responses: APIResponseSpec.describeWithWrongInputs(
+			APIResponseSpec.successNoData("Settings sent to the agent"),
+			APIResponseSpec.notFound("Agent not found"),
+			...AGENT_REQUEST_ERRORS,
+		),
+	}),
+
+	validator("json", AgentsModel.DeviceConfig.Body),
+
+	async (c) => {
+		try {
+			await requestAgent(getAgent(c).id, "CONFIG_SET", c.req.valid("json"));
+			return APIResponse.successNoData(c, "Settings sent to the agent");
+		} catch (error) {
+			return agentRequestError(c, error);
+		}
+	},
+);
+
+router.post(
+	"/:agentID/reboot",
+
+	APIRouteSpec.authenticated({
+		summary: "Restart an agent",
+		tags: [DOCS_TAGS.AGENTS],
+		responses: APIResponseSpec.describeBasic(
+			APIResponseSpec.successNoData("The agent restarts"),
+			APIResponseSpec.notFound("Agent not found"),
+			...AGENT_REQUEST_ERRORS,
+		),
+	}),
+
+	async (c) => {
+		try {
+			await requestAgent(getAgent(c).id, "REBOOT", {});
+			return APIResponse.successNoData(c, "The agent restarts");
+		} catch (error) {
+			return agentRequestError(c, error);
+		}
+	},
+);
+
+router.post(
+	"/:agentID/factory-reset",
+
+	APIRouteSpec.authenticated({
+		summary: "Factory-reset an agent",
+		description:
+			"Erases the agent's Wi-Fi, server and credential and restarts it. Its credential is revoked here " +
+			"too; set it up again with the web installer.",
+		tags: [DOCS_TAGS.AGENTS],
+		responses: APIResponseSpec.describeBasic(
+			APIResponseSpec.success("The agent was reset", AgentsModel.Agent),
+			APIResponseSpec.notFound("Agent not found"),
+			...AGENT_REQUEST_ERRORS,
+		),
+	}),
+
+	async (c) => {
+		const agent = getAgent(c);
+		try {
+			await requestAgent(agent.id, "FACTORY_RESET", {});
+		} catch (error) {
+			return agentRequestError(c, error);
+		}
+
+		AgentAuth.revoke(agent.id);
+		const updated = await DB.instance()
+			.select()
+			.from(DB.Tables.agents)
+			.where(eq(DB.Tables.agents.id, agent.id))
+			.get();
+		return APIResponse.success(c, "The agent was reset", toAgentResponse(updated ?? agent));
 	},
 );

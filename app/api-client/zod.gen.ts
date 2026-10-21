@@ -488,7 +488,8 @@ export const zPostAdminFirmwareSyncResponse = z.object({
 
 export const zPostAgentsEnrollBody = z.object({
     enrollment_token: z.string().min(1).max(256),
-    secret: z.string().min(32).max(128)
+    secret: z.string().min(32).max(128),
+    kind: z.enum(['esp32', 'linux']).optional()
 });
 
 /**
@@ -527,7 +528,24 @@ export const zGetAgentsResponse = z.object({
         info: z.record(z.string(), z.unknown()).nullable(),
         last_seen_at: z.number().nullable(),
         enrolled_at: z.number().nullable(),
-        created_at: z.number()
+        created_at: z.number(),
+        update: z.object({
+            version: z.string(),
+            from_version: z.string().nullable(),
+            state: z.enum([
+                'queued',
+                'starting',
+                'downloading',
+                'restarting',
+                'done',
+                'failed'
+            ]),
+            percent: z.number(),
+            error: z.string().nullable(),
+            started_at: z.number(),
+            updated_at: z.number()
+        }).nullable(),
+        update_available: z.string().nullable()
     }))
 });
 
@@ -559,7 +577,46 @@ export const zPostAgentsResponse = z.object({
         info: z.record(z.string(), z.unknown()).nullable(),
         last_seen_at: z.number().nullable(),
         enrolled_at: z.number().nullable(),
-        created_at: z.number()
+        created_at: z.number(),
+        update: z.object({
+            version: z.string(),
+            from_version: z.string().nullable(),
+            state: z.enum([
+                'queued',
+                'starting',
+                'downloading',
+                'restarting',
+                'done',
+                'failed'
+            ]),
+            percent: z.number(),
+            error: z.string().nullable(),
+            started_at: z.number(),
+            updated_at: z.number()
+        }).nullable(),
+        update_available: z.string().nullable()
+    })
+});
+
+export const zPostAgentsBulkUpdateBody = z.object({
+    agent_ids: z.array(z.int().gt(0).lte(9007199254740991)).min(1).max(200),
+    version: z.string().regex(/^\d+\.\d+\.\d+(?:-[0-9A-Za-z.]+)?$/).optional()
+});
+
+/**
+ * Updates queued
+ */
+export const zPostAgentsBulkUpdateResponse = z.object({
+    success: z.literal(true),
+    code: z.literal(202),
+    message: z.literal('Updates queued'),
+    data: z.object({
+        version: z.string(),
+        queued: z.array(z.number()),
+        skipped: z.array(z.object({
+            agent_id: z.number(),
+            reason: z.string()
+        }))
     })
 });
 
@@ -603,7 +660,24 @@ export const zGetAgentsByAgentIdResponse = z.object({
         info: z.record(z.string(), z.unknown()).nullable(),
         last_seen_at: z.number().nullable(),
         enrolled_at: z.number().nullable(),
-        created_at: z.number()
+        created_at: z.number(),
+        update: z.object({
+            version: z.string(),
+            from_version: z.string().nullable(),
+            state: z.enum([
+                'queued',
+                'starting',
+                'downloading',
+                'restarting',
+                'done',
+                'failed'
+            ]),
+            percent: z.number(),
+            error: z.string().nullable(),
+            started_at: z.number(),
+            updated_at: z.number()
+        }).nullable(),
+        update_available: z.string().nullable()
     })
 });
 
@@ -638,7 +712,24 @@ export const zPutAgentsByAgentIdResponse = z.object({
         info: z.record(z.string(), z.unknown()).nullable(),
         last_seen_at: z.number().nullable(),
         enrolled_at: z.number().nullable(),
-        created_at: z.number()
+        created_at: z.number(),
+        update: z.object({
+            version: z.string(),
+            from_version: z.string().nullable(),
+            state: z.enum([
+                'queued',
+                'starting',
+                'downloading',
+                'restarting',
+                'done',
+                'failed'
+            ]),
+            percent: z.number(),
+            error: z.string().nullable(),
+            started_at: z.number(),
+            updated_at: z.number()
+        }).nullable(),
+        update_available: z.string().nullable()
     })
 });
 
@@ -685,7 +776,24 @@ export const zPostAgentsByAgentIdRevokeResponse = z.object({
         info: z.record(z.string(), z.unknown()).nullable(),
         last_seen_at: z.number().nullable(),
         enrolled_at: z.number().nullable(),
-        created_at: z.number()
+        created_at: z.number(),
+        update: z.object({
+            version: z.string(),
+            from_version: z.string().nullable(),
+            state: z.enum([
+                'queued',
+                'starting',
+                'downloading',
+                'restarting',
+                'done',
+                'failed'
+            ]),
+            percent: z.number(),
+            error: z.string().nullable(),
+            started_at: z.number(),
+            updated_at: z.number()
+        }).nullable(),
+        update_available: z.string().nullable()
     })
 });
 
@@ -710,6 +818,177 @@ export const zPostAgentsByAgentIdFlashImageResponse = z.object({
         offset: z.number(),
         server_url: z.string(),
         expires_at: z.number()
+    })
+});
+
+export const zPostAgentsByAgentIdUpdateBody = z.object({
+    version: z.string().regex(/^\d+\.\d+\.\d+(?:-[0-9A-Za-z.]+)?$/).optional()
+});
+
+export const zPostAgentsByAgentIdUpdatePath = z.object({
+    agentID: z.int().gt(0).lte(9007199254740991)
+});
+
+/**
+ * Update started
+ */
+export const zPostAgentsByAgentIdUpdateResponse = z.object({
+    success: z.literal(true),
+    code: z.literal(202),
+    message: z.literal('Update started'),
+    data: z.object({
+        version: z.string(),
+        from_version: z.string().nullable(),
+        state: z.enum([
+            'queued',
+            'starting',
+            'downloading',
+            'restarting',
+            'done',
+            'failed'
+        ]),
+        percent: z.number(),
+        error: z.string().nullable(),
+        started_at: z.number(),
+        updated_at: z.number()
+    })
+});
+
+export const zGetAgentsByAgentIdLogsPath = z.object({
+    agentID: z.int().gt(0).lte(9007199254740991)
+});
+
+/**
+ * Log retrieved
+ */
+export const zGetAgentsByAgentIdLogsResponse = z.object({
+    success: z.literal(true),
+    code: z.literal(200),
+    message: z.literal('Log retrieved'),
+    data: z.object({
+        lines: z.array(z.string()),
+        level: z.enum([
+            'error',
+            'warn',
+            'info',
+            'debug'
+        ]).nullable()
+    })
+});
+
+export const zGetAgentsByAgentIdInfoPath = z.object({
+    agentID: z.int().gt(0).lte(9007199254740991)
+});
+
+/**
+ * Info retrieved
+ */
+export const zGetAgentsByAgentIdInfoResponse = z.object({
+    success: z.literal(true),
+    code: z.literal(200),
+    message: z.literal('Info retrieved'),
+    data: z.object({
+        version: z.string().nullable(),
+        info: z.record(z.string(), z.unknown())
+    })
+});
+
+export const zPutAgentsByAgentIdDeviceConfigBody = z.object({
+    server_url: z.url().max(200).optional(),
+    name: z.string().regex(/^[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?$/).optional(),
+    log_level: z.enum([
+        'error',
+        'warn',
+        'info',
+        'debug'
+    ]).optional(),
+    ip: z.union([
+        z.object({
+            mode: z.literal('dhcp')
+        }),
+        z.object({
+            mode: z.literal('static'),
+            address: z.ipv4().regex(/^(?:(?:25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9][0-9]|[0-9])\.){3}(?:25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9][0-9]|[0-9])$/),
+            gateway: z.ipv4().regex(/^(?:(?:25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9][0-9]|[0-9])\.){3}(?:25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9][0-9]|[0-9])$/),
+            netmask: z.ipv4().regex(/^(?:(?:25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9][0-9]|[0-9])\.){3}(?:25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9][0-9]|[0-9])$/),
+            dns1: z.ipv4().regex(/^(?:(?:25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9][0-9]|[0-9])\.){3}(?:25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9][0-9]|[0-9])$/).optional(),
+            dns2: z.ipv4().regex(/^(?:(?:25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9][0-9]|[0-9])\.){3}(?:25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9][0-9]|[0-9])$/).optional()
+        })
+    ]).optional()
+});
+
+export const zPutAgentsByAgentIdDeviceConfigPath = z.object({
+    agentID: z.int().gt(0).lte(9007199254740991)
+});
+
+/**
+ * Settings sent to the agent
+ */
+export const zPutAgentsByAgentIdDeviceConfigResponse = z.object({
+    success: z.literal(true),
+    code: z.literal(200),
+    message: z.literal('Settings sent to the agent'),
+    data: z.null()
+});
+
+export const zPostAgentsByAgentIdRebootPath = z.object({
+    agentID: z.int().gt(0).lte(9007199254740991)
+});
+
+/**
+ * The agent restarts
+ */
+export const zPostAgentsByAgentIdRebootResponse = z.object({
+    success: z.literal(true),
+    code: z.literal(200),
+    message: z.literal('The agent restarts'),
+    data: z.null()
+});
+
+export const zPostAgentsByAgentIdFactoryResetPath = z.object({
+    agentID: z.int().gt(0).lte(9007199254740991)
+});
+
+/**
+ * The agent was reset
+ */
+export const zPostAgentsByAgentIdFactoryResetResponse = z.object({
+    success: z.literal(true),
+    code: z.literal(200),
+    message: z.literal('The agent was reset'),
+    data: z.object({
+        id: z.number(),
+        name: z.string(),
+        description: z.string(),
+        kind: z.enum(['esp32', 'linux']),
+        state: z.enum([
+            'online',
+            'offline',
+            'unenrolled'
+        ]),
+        version: z.string().nullable(),
+        capabilities: z.array(z.string()),
+        info: z.record(z.string(), z.unknown()).nullable(),
+        last_seen_at: z.number().nullable(),
+        enrolled_at: z.number().nullable(),
+        created_at: z.number(),
+        update: z.object({
+            version: z.string(),
+            from_version: z.string().nullable(),
+            state: z.enum([
+                'queued',
+                'starting',
+                'downloading',
+                'restarting',
+                'done',
+                'failed'
+            ]),
+            percent: z.number(),
+            error: z.string().nullable(),
+            started_at: z.number(),
+            updated_at: z.number()
+        }).nullable(),
+        update_available: z.string().nullable()
     })
 });
 

@@ -1,17 +1,29 @@
 import { Hono } from "hono";
 import { validator } from "hono-openapi";
+import { AgentAuth } from "../../../../../agents/auth";
 import type { DB } from "../../../../../db";
 import { FirmwareCatalog } from "../../../../../firmware/catalog";
 import { APIResponse } from "../../../../utils/api-res";
+import { AuthHandler } from "../../../../utils/authHandler";
 import { RuntimeMetadata } from "../../../../utils/metadata";
 import { APIResponseSpec, APIRouteSpec } from "../../../../utils/specHelpers";
 import { DOCS_TAGS } from "../../docs";
-import { requireUser } from "../../middleware/requireUser";
 import { FirmwareModel } from "./model";
 
 export const router = new Hono().basePath("/firmware");
 
-router.use("*", requireUser);
+// Users (the web installer), and ESP32 agents downloading an OTA update with their own credential.
+router.use("*", async (c, next) => {
+	if (AuthHandler.AuthContext.get(c).type !== "unauthenticated") return await next();
+
+	const header = c.req.header("Authorization");
+	const isFileDownload = c.req.method === "GET" && /\/files\/[^/]+$/.test(c.req.path);
+	if (isFileDownload && header?.startsWith(`Bearer ${AgentAuth.AGENT_TOKEN_PREFIX}`)) {
+		const agent = await AgentAuth.authenticate(header.slice("Bearer ".length).trim());
+		if (agent?.kind === "esp32") return await next();
+	}
+	return APIResponse.unauthorized(c, "Authentication required");
+});
 
 export function toReleaseResponse(release: DB.Models.FirmwareRelease): FirmwareModel.Release {
 	return {
@@ -58,7 +70,9 @@ router.get(
 
 	APIRouteSpec.authenticated({
 		summary: "Download a firmware file",
-		description: "A flash image (or the signature) of a synced release, for the web installer.",
+		description:
+			"A flash image (or the signature) of a synced release, for the web installer. ESP32 agents " +
+			"download OTA updates here with their agent credential.",
 		tags: [DOCS_TAGS.FIRMWARE],
 		responses: {
 			200: {

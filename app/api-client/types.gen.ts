@@ -1193,6 +1193,7 @@ export type PostAgentsEnrollData = {
     body: {
         enrollment_token: string;
         secret: string;
+        kind?: 'esp32' | 'linux';
     };
     path?: never;
     query?: never;
@@ -1215,6 +1216,14 @@ export type PostAgentsEnrollErrors = {
         success: false;
         code: 401;
         message: 'Unauthorized: Unknown, used or expired enrollment token';
+    };
+    /**
+     * The token is for another kind of agent (it stays valid)
+     */
+    409: {
+        success: false;
+        code: 409;
+        message: 'The token is for another kind of agent (it stays valid)';
     };
     /**
      * Too many enrollment attempts
@@ -1275,6 +1284,16 @@ export type GetAgentsResponses = {
             last_seen_at: number | null;
             enrolled_at: number | null;
             created_at: number;
+            update: {
+                version: string;
+                from_version: string | null;
+                state: 'queued' | 'starting' | 'downloading' | 'restarting' | 'done' | 'failed';
+                percent: number;
+                error: string | null;
+                started_at: number;
+                updated_at: number;
+            } | null;
+            update_available: string | null;
         }>;
     };
 };
@@ -1327,11 +1346,73 @@ export type PostAgentsResponses = {
             last_seen_at: number | null;
             enrolled_at: number | null;
             created_at: number;
+            update: {
+                version: string;
+                from_version: string | null;
+                state: 'queued' | 'starting' | 'downloading' | 'restarting' | 'done' | 'failed';
+                percent: number;
+                error: string | null;
+                started_at: number;
+                updated_at: number;
+            } | null;
+            update_available: string | null;
         };
     };
 };
 
 export type PostAgentsResponse = PostAgentsResponses[keyof PostAgentsResponses];
+
+export type PostAgentsBulkUpdateData = {
+    body: {
+        agent_ids: Array<number>;
+        version?: string;
+    };
+    path?: never;
+    query?: never;
+    url: '/agents/bulk-update';
+};
+
+export type PostAgentsBulkUpdateErrors = {
+    /**
+     * Bad Request: Syntax or validation error in request
+     */
+    400: {
+        success: false;
+        code: 400;
+        message: 'Bad Request: Syntax or validation error in request';
+    };
+    /**
+     * Firmware release not found
+     */
+    404: {
+        success: false;
+        code: 404;
+        message: 'Firmware release not found';
+    };
+};
+
+export type PostAgentsBulkUpdateError = PostAgentsBulkUpdateErrors[keyof PostAgentsBulkUpdateErrors];
+
+export type PostAgentsBulkUpdateResponses = {
+    /**
+     * Updates queued
+     */
+    202: {
+        success: true;
+        code: 202;
+        message: 'Updates queued';
+        data: {
+            version: string;
+            queued: Array<number>;
+            skipped: Array<{
+                agent_id: number;
+                reason: string;
+            }>;
+        };
+    };
+};
+
+export type PostAgentsBulkUpdateResponse = PostAgentsBulkUpdateResponses[keyof PostAgentsBulkUpdateResponses];
 
 export type DeleteAgentsByAgentIdData = {
     body?: never;
@@ -1429,6 +1510,16 @@ export type GetAgentsByAgentIdResponses = {
             last_seen_at: number | null;
             enrolled_at: number | null;
             created_at: number;
+            update: {
+                version: string;
+                from_version: string | null;
+                state: 'queued' | 'starting' | 'downloading' | 'restarting' | 'done' | 'failed';
+                percent: number;
+                error: string | null;
+                started_at: number;
+                updated_at: number;
+            } | null;
+            update_available: string | null;
         };
     };
 };
@@ -1490,6 +1581,16 @@ export type PutAgentsByAgentIdResponses = {
             last_seen_at: number | null;
             enrolled_at: number | null;
             created_at: number;
+            update: {
+                version: string;
+                from_version: string | null;
+                state: 'queued' | 'starting' | 'downloading' | 'restarting' | 'done' | 'failed';
+                percent: number;
+                error: string | null;
+                started_at: number;
+                updated_at: number;
+            } | null;
+            update_available: string | null;
         };
     };
 };
@@ -1595,6 +1696,16 @@ export type PostAgentsByAgentIdRevokeResponses = {
             last_seen_at: number | null;
             enrolled_at: number | null;
             created_at: number;
+            update: {
+                version: string;
+                from_version: string | null;
+                state: 'queued' | 'starting' | 'downloading' | 'restarting' | 'done' | 'failed';
+                percent: number;
+                error: string | null;
+                started_at: number;
+                updated_at: number;
+            } | null;
+            update_available: string | null;
         };
     };
 };
@@ -1652,6 +1763,510 @@ export type PostAgentsByAgentIdFlashImageResponses = {
 };
 
 export type PostAgentsByAgentIdFlashImageResponse = PostAgentsByAgentIdFlashImageResponses[keyof PostAgentsByAgentIdFlashImageResponses];
+
+export type PostAgentsByAgentIdUpdateData = {
+    body?: {
+        version?: string;
+    };
+    path: {
+        agentID: number;
+    };
+    query?: never;
+    url: '/agents/{agentID}/update';
+};
+
+export type PostAgentsByAgentIdUpdateErrors = {
+    /**
+     * Bad Request: Syntax or validation error in request
+     */
+    400: {
+        success: false;
+        code: 400;
+        message: 'Bad Request: Syntax or validation error in request';
+    };
+    /**
+     * Agent or firmware release not found
+     */
+    404: {
+        success: false;
+        code: 404;
+        message: 'Agent or firmware release not found';
+    };
+    /**
+     * The agent can't be updated now
+     */
+    409: {
+        success: false;
+        code: 409;
+        message: 'The agent can\'t be updated now';
+    };
+    /**
+     * The agent couldn't start the update
+     */
+    502: {
+        success: false;
+        code: 502;
+        message: 'The agent couldn\'t start the update';
+    };
+    /**
+     * The agent is offline
+     */
+    503: {
+        success: false;
+        code: 503;
+        message: 'The agent is offline';
+    };
+};
+
+export type PostAgentsByAgentIdUpdateError = PostAgentsByAgentIdUpdateErrors[keyof PostAgentsByAgentIdUpdateErrors];
+
+export type PostAgentsByAgentIdUpdateResponses = {
+    /**
+     * Update started
+     */
+    202: {
+        success: true;
+        code: 202;
+        message: 'Update started';
+        data: {
+            version: string;
+            from_version: string | null;
+            state: 'queued' | 'starting' | 'downloading' | 'restarting' | 'done' | 'failed';
+            percent: number;
+            error: string | null;
+            started_at: number;
+            updated_at: number;
+        };
+    };
+};
+
+export type PostAgentsByAgentIdUpdateResponse = PostAgentsByAgentIdUpdateResponses[keyof PostAgentsByAgentIdUpdateResponses];
+
+export type GetAgentsByAgentIdLogsData = {
+    body?: never;
+    path: {
+        agentID: number;
+    };
+    query?: never;
+    url: '/agents/{agentID}/logs';
+};
+
+export type GetAgentsByAgentIdLogsErrors = {
+    /**
+     * Validation Error
+     */
+    400: {
+        success: false;
+        error: Array<unknown>;
+        data: unknown;
+    };
+    /**
+     * Agent not found
+     */
+    404: {
+        success: false;
+        code: 404;
+        message: 'Agent not found';
+    };
+    /**
+     * The agent doesn't support this
+     */
+    409: {
+        success: false;
+        code: 409;
+        message: 'The agent doesn\'t support this';
+    };
+    /**
+     * The agent reported an error
+     */
+    502: {
+        success: false;
+        code: 502;
+        message: 'The agent reported an error';
+    };
+    /**
+     * The agent is offline
+     */
+    503: {
+        success: false;
+        code: 503;
+        message: 'The agent is offline';
+    };
+    /**
+     * The agent didn't answer in time
+     */
+    504: {
+        success: false;
+        code: 504;
+        message: 'The agent didn\'t answer in time';
+    };
+};
+
+export type GetAgentsByAgentIdLogsError = GetAgentsByAgentIdLogsErrors[keyof GetAgentsByAgentIdLogsErrors];
+
+export type GetAgentsByAgentIdLogsResponses = {
+    /**
+     * Log retrieved
+     */
+    200: {
+        success: true;
+        code: 200;
+        message: 'Log retrieved';
+        data: {
+            lines: Array<string>;
+            level: 'error' | 'warn' | 'info' | 'debug' | null;
+        };
+    };
+};
+
+export type GetAgentsByAgentIdLogsResponse = GetAgentsByAgentIdLogsResponses[keyof GetAgentsByAgentIdLogsResponses];
+
+export type GetAgentsByAgentIdInfoData = {
+    body?: never;
+    path: {
+        agentID: number;
+    };
+    query?: never;
+    url: '/agents/{agentID}/info';
+};
+
+export type GetAgentsByAgentIdInfoErrors = {
+    /**
+     * Validation Error
+     */
+    400: {
+        success: false;
+        error: Array<unknown>;
+        data: unknown;
+    };
+    /**
+     * Agent not found
+     */
+    404: {
+        success: false;
+        code: 404;
+        message: 'Agent not found';
+    };
+    /**
+     * The agent doesn't support this
+     */
+    409: {
+        success: false;
+        code: 409;
+        message: 'The agent doesn\'t support this';
+    };
+    /**
+     * The agent reported an error
+     */
+    502: {
+        success: false;
+        code: 502;
+        message: 'The agent reported an error';
+    };
+    /**
+     * The agent is offline
+     */
+    503: {
+        success: false;
+        code: 503;
+        message: 'The agent is offline';
+    };
+    /**
+     * The agent didn't answer in time
+     */
+    504: {
+        success: false;
+        code: 504;
+        message: 'The agent didn\'t answer in time';
+    };
+};
+
+export type GetAgentsByAgentIdInfoError = GetAgentsByAgentIdInfoErrors[keyof GetAgentsByAgentIdInfoErrors];
+
+export type GetAgentsByAgentIdInfoResponses = {
+    /**
+     * Info retrieved
+     */
+    200: {
+        success: true;
+        code: 200;
+        message: 'Info retrieved';
+        data: {
+            version: string | null;
+            info: {
+                [key: string]: unknown;
+            };
+        };
+    };
+};
+
+export type GetAgentsByAgentIdInfoResponse = GetAgentsByAgentIdInfoResponses[keyof GetAgentsByAgentIdInfoResponses];
+
+export type PutAgentsByAgentIdDeviceConfigData = {
+    body?: {
+        server_url?: string;
+        name?: string;
+        log_level?: 'error' | 'warn' | 'info' | 'debug';
+        ip?: {
+            mode: 'dhcp';
+        } | {
+            mode: 'static';
+            address: string;
+            gateway: string;
+            netmask: string;
+            dns1?: string;
+            dns2?: string;
+        };
+    };
+    path: {
+        agentID: number;
+    };
+    query?: never;
+    url: '/agents/{agentID}/device-config';
+};
+
+export type PutAgentsByAgentIdDeviceConfigErrors = {
+    /**
+     * Bad Request: Syntax or validation error in request
+     */
+    400: {
+        success: false;
+        code: 400;
+        message: 'Bad Request: Syntax or validation error in request';
+    };
+    /**
+     * Agent not found
+     */
+    404: {
+        success: false;
+        code: 404;
+        message: 'Agent not found';
+    };
+    /**
+     * The agent doesn't support this
+     */
+    409: {
+        success: false;
+        code: 409;
+        message: 'The agent doesn\'t support this';
+    };
+    /**
+     * The agent reported an error
+     */
+    502: {
+        success: false;
+        code: 502;
+        message: 'The agent reported an error';
+    };
+    /**
+     * The agent is offline
+     */
+    503: {
+        success: false;
+        code: 503;
+        message: 'The agent is offline';
+    };
+    /**
+     * The agent didn't answer in time
+     */
+    504: {
+        success: false;
+        code: 504;
+        message: 'The agent didn\'t answer in time';
+    };
+};
+
+export type PutAgentsByAgentIdDeviceConfigError = PutAgentsByAgentIdDeviceConfigErrors[keyof PutAgentsByAgentIdDeviceConfigErrors];
+
+export type PutAgentsByAgentIdDeviceConfigResponses = {
+    /**
+     * Settings sent to the agent
+     */
+    200: {
+        success: true;
+        code: 200;
+        message: 'Settings sent to the agent';
+        data: null;
+    };
+};
+
+export type PutAgentsByAgentIdDeviceConfigResponse = PutAgentsByAgentIdDeviceConfigResponses[keyof PutAgentsByAgentIdDeviceConfigResponses];
+
+export type PostAgentsByAgentIdRebootData = {
+    body?: never;
+    path: {
+        agentID: number;
+    };
+    query?: never;
+    url: '/agents/{agentID}/reboot';
+};
+
+export type PostAgentsByAgentIdRebootErrors = {
+    /**
+     * Validation Error
+     */
+    400: {
+        success: false;
+        error: Array<unknown>;
+        data: unknown;
+    };
+    /**
+     * Agent not found
+     */
+    404: {
+        success: false;
+        code: 404;
+        message: 'Agent not found';
+    };
+    /**
+     * The agent doesn't support this
+     */
+    409: {
+        success: false;
+        code: 409;
+        message: 'The agent doesn\'t support this';
+    };
+    /**
+     * The agent reported an error
+     */
+    502: {
+        success: false;
+        code: 502;
+        message: 'The agent reported an error';
+    };
+    /**
+     * The agent is offline
+     */
+    503: {
+        success: false;
+        code: 503;
+        message: 'The agent is offline';
+    };
+    /**
+     * The agent didn't answer in time
+     */
+    504: {
+        success: false;
+        code: 504;
+        message: 'The agent didn\'t answer in time';
+    };
+};
+
+export type PostAgentsByAgentIdRebootError = PostAgentsByAgentIdRebootErrors[keyof PostAgentsByAgentIdRebootErrors];
+
+export type PostAgentsByAgentIdRebootResponses = {
+    /**
+     * The agent restarts
+     */
+    200: {
+        success: true;
+        code: 200;
+        message: 'The agent restarts';
+        data: null;
+    };
+};
+
+export type PostAgentsByAgentIdRebootResponse = PostAgentsByAgentIdRebootResponses[keyof PostAgentsByAgentIdRebootResponses];
+
+export type PostAgentsByAgentIdFactoryResetData = {
+    body?: never;
+    path: {
+        agentID: number;
+    };
+    query?: never;
+    url: '/agents/{agentID}/factory-reset';
+};
+
+export type PostAgentsByAgentIdFactoryResetErrors = {
+    /**
+     * Validation Error
+     */
+    400: {
+        success: false;
+        error: Array<unknown>;
+        data: unknown;
+    };
+    /**
+     * Agent not found
+     */
+    404: {
+        success: false;
+        code: 404;
+        message: 'Agent not found';
+    };
+    /**
+     * The agent doesn't support this
+     */
+    409: {
+        success: false;
+        code: 409;
+        message: 'The agent doesn\'t support this';
+    };
+    /**
+     * The agent reported an error
+     */
+    502: {
+        success: false;
+        code: 502;
+        message: 'The agent reported an error';
+    };
+    /**
+     * The agent is offline
+     */
+    503: {
+        success: false;
+        code: 503;
+        message: 'The agent is offline';
+    };
+    /**
+     * The agent didn't answer in time
+     */
+    504: {
+        success: false;
+        code: 504;
+        message: 'The agent didn\'t answer in time';
+    };
+};
+
+export type PostAgentsByAgentIdFactoryResetError = PostAgentsByAgentIdFactoryResetErrors[keyof PostAgentsByAgentIdFactoryResetErrors];
+
+export type PostAgentsByAgentIdFactoryResetResponses = {
+    /**
+     * The agent was reset
+     */
+    200: {
+        success: true;
+        code: 200;
+        message: 'The agent was reset';
+        data: {
+            id: number;
+            name: string;
+            description: string;
+            kind: 'esp32' | 'linux';
+            state: 'online' | 'offline' | 'unenrolled';
+            version: string | null;
+            capabilities: Array<string>;
+            info: {
+                [key: string]: unknown;
+            } | null;
+            last_seen_at: number | null;
+            enrolled_at: number | null;
+            created_at: number;
+            update: {
+                version: string;
+                from_version: string | null;
+                state: 'queued' | 'starting' | 'downloading' | 'restarting' | 'done' | 'failed';
+                percent: number;
+                error: string | null;
+                started_at: number;
+                updated_at: number;
+            } | null;
+            update_available: string | null;
+        };
+    };
+};
+
+export type PostAgentsByAgentIdFactoryResetResponse = PostAgentsByAgentIdFactoryResetResponses[keyof PostAgentsByAgentIdFactoryResetResponses];
 
 export type GetDevicesData = {
     body?: never;

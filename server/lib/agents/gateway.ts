@@ -24,6 +24,7 @@ export class AgentGatewayRunner {
 	private static keepaliveTimer: ReturnType<typeof setInterval> | null = null;
 	private static readonly lastSeenWrites = new Map<number, number>();
 	private static readonly helloListeners = new Set<(connection: AgentConnection) => void>();
+	private static readonly disconnectListeners = new Set<(connection: AgentConnection) => void>();
 	private static readonly eventHandlers = new Map<
 		string,
 		(connection: AgentConnection, payload: Record<string, unknown>) => void | Promise<void>
@@ -57,6 +58,12 @@ export class AgentGatewayRunner {
 	static onHello(listener: (connection: AgentConnection) => void) {
 		this.helloListeners.add(listener);
 		return () => this.helloListeners.delete(listener);
+	}
+
+	/** Called when an agent's connection closes (not when it was replaced by a newer one). */
+	static onDisconnect(listener: (connection: AgentConnection) => void) {
+		this.disconnectListeners.add(listener);
+		return () => this.disconnectListeners.delete(listener);
 	}
 
 	/** Registers the handler for an agent event (`evt` frames other than HELLO). */
@@ -172,6 +179,13 @@ export class AgentGatewayRunner {
 		if (!connection) return;
 
 		Logger.info(`Agent ${connection.agentID} disconnected`);
+		for (const listener of this.disconnectListeners) {
+			try {
+				listener(connection);
+			} catch (error) {
+				Logger.error("Disconnect listener failed", error);
+			}
+		}
 		await this.writeLastSeen(connection.agentID, true);
 	}
 

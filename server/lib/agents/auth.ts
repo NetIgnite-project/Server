@@ -1,5 +1,6 @@
 import { and, eq, isNull } from "drizzle-orm";
 import { AuthUtils } from "../api/utils/authHandler";
+import type { AgentSettings } from "../api/utils/shared-models/netigniteData";
 import { DB } from "../db";
 import { AppConstants } from "../utils/constants";
 import { AgentCloseCodes, AgentRegistry } from "./registry";
@@ -54,8 +55,11 @@ export class AgentAuth {
 	/**
 	 * Redeems an enrollment token and stores the agent's new credential. Returns the agent and the
 	 * token id it must use from now on, or null if the token is unknown, used or expired.
+	 *
+	 * With `expectedKind` (sent by current agents), a token of another kind of agent is refused
+	 * with `{ wrongKind }` before it is used, so it keeps working for the right device.
 	 */
-	static async enroll(enrollmentToken: string, secret: string) {
+	static async enroll(enrollmentToken: string, secret: string, expectedKind?: AgentSettings.Kind) {
 		const parts = this.parseToken(enrollmentToken, this.ENROLLMENT_TOKEN_PREFIX);
 		if (!parts || !this.SECRET_PATTERN.test(secret)) return null;
 
@@ -72,6 +76,15 @@ export class AgentAuth {
 			!(await AuthUtils.verifyHashedTokenBase(parts.base, enrollment.hashed_token))
 		) {
 			return null;
+		}
+
+		if (expectedKind) {
+			const target = await DB.instance()
+				.select({ kind: DB.Tables.agents.kind })
+				.from(DB.Tables.agents)
+				.where(eq(DB.Tables.agents.id, enrollment.agent_id))
+				.get();
+			if (target && target.kind !== expectedKind) return { wrongKind: target.kind } as const;
 		}
 
 		const tokenID = AuthUtils.createRandomTokenID();
@@ -106,7 +119,7 @@ export class AgentAuth {
 		// A previously enrolled device with the old credential must not stay connected.
 		AgentRegistry.disconnect(agent.id, AgentCloseCodes.CREDENTIAL_REVOKED, "Agent was re-enrolled");
 
-		return { agent, token_id: tokenID };
+		return { agent, token_id: tokenID, wrongKind: null };
 	}
 
 	/** Resolves an agent credential (`netignite_agent_<token_id>:<secret>`) to its agent. */

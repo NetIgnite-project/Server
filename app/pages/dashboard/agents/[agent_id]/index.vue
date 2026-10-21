@@ -106,13 +106,18 @@ async function createEnrollment() {
 	enrollment.value = res.data;
 }
 
-// The command that sets the agent up: the Linux agent's CLI, or the ESP32 firmware's serial console.
+// The command that sets the agent up: the Linux install script, or the ESP32 firmware's serial console.
+const serverUrl = appUrl.replace(/\/$/, "");
 const setupCommand = computed(() => {
 	if (!enrollment.value || agent.isNew) return "";
 	return agent.data.value.kind === "linux"
-		? `sudo netignite-agent pair ${appUrl} ${enrollment.value.token}`
-		: `setup ${appUrl} ${enrollment.value.token}`;
+		? `curl -fsSL ${serverUrl}/install/linux.sh | sudo sh -s -- ${enrollment.value.token}`
+		: `setup ${serverUrl} ${enrollment.value.token}`;
 });
+// For a machine that already has the Linux agent installed.
+const pairCommand = computed(() =>
+	enrollment.value ? `sudo netignite-agent pair ${serverUrl} ${enrollment.value.token}` : "",
+);
 
 async function copy(text: string) {
 	try {
@@ -238,6 +243,12 @@ async function onDelete() {
 				</dl>
 			</DashboardSectionCard>
 
+			<AgentsFirmwareCard
+				v-if="agent.data.value.kind === 'esp32' && agent.data.value.state !== 'unenrolled'"
+				:agent="agent.data.value"
+				@refresh="agent.refresh()"
+			/>
+
 			<DashboardSectionCard
 				:title="agent.data.value.state === 'unenrolled' ? 'Set up' : 'Set up again'"
 				:description="agent.data.value.state === 'unenrolled' ? 'Connect this agent to NetIgnite' : 'Replaces the current credential'"
@@ -269,8 +280,9 @@ async function onDelete() {
 
 				<template v-else>
 					<p class="text-sm text-slate-300">
-						Install the NetIgnite Linux agent on the machine, then run the pairing command on it. The
-						command works once and expires after 15 minutes.
+						Run the command below on the Linux machine (systemd, x86-64 or 64-bit ARM). It downloads the
+						NetIgnite agent, checks it, pairs it with this server and installs it as a service. The command
+						works once and expires after 15 minutes.
 					</p>
 				</template>
 
@@ -302,6 +314,13 @@ async function onDelete() {
 							Valid until {{ formatDate(enrollment.expires_at) }}. The agent generates its own secret when it
 							uses this token; NetIgnite never shows it.
 						</p>
+						<details v-if="agent.data.value.kind === 'linux'" class="text-xs text-slate-400">
+							<summary class="cursor-pointer">Agent already installed?</summary>
+							<div class="mt-2 flex items-start gap-2 rounded-lg border border-slate-800 bg-slate-900/60 p-3">
+								<code class="flex-1 break-all font-mono text-slate-200">{{ pairCommand }}</code>
+								<UButton icon="i-lucide-copy" color="neutral" variant="ghost" size="xs" aria-label="Copy" @click="copy(pairCommand)" />
+							</div>
+						</details>
 					</template>
 				</div>
 			</DashboardSectionCard>

@@ -29,6 +29,8 @@ function setTestEnv(rootDir: string) {
 		NETIGNITE_FIRMWARE_DIR: path.join(rootDir, "firmware"),
 		NETIGNITE_FIRMWARE_PUBLIC_KEY: undefined,
 		NETIGNITE_GITHUB_TOKEN: undefined,
+		NETIGNITE_LINUX_AGENT_REPO: "NetIgnite-project/Agent-Linux",
+		NETIGNITE_LINUX_AGENT_VERSION: undefined,
 
 		NETIGNITE_SMTP_HOST: "127.0.0.1",
 		NETIGNITE_SMTP_PORT: 12587,

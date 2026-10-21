@@ -51,6 +51,31 @@ itself when it enrolls.
 | `NETIGNITE_FIRMWARE_PUBLIC_KEY` | — | PEM ECDSA P-256 key; then only signed releases are accepted |
 | `NETIGNITE_GITHUB_TOKEN` | — | Raises GitHub's API rate limit |
 
+### Firmware updates and console
+
+ESP32 agents with firmware 2.1 or newer update over the network: the agent page shows **Update
+to …** when the admin's channel has a newer release (Agents → **Update n agents** updates several
+one after another). The agent downloads the image from this server with its own credential,
+checks its SHA-256 (and signature, if its firmware has a public key compiled in), restarts and goes
+back to the previous firmware if the new one doesn't reach the server within 5 minutes.
+
+The agent's **Console** tab shows its live log (WebSocket `/ws/console`) and changes its log
+level, server address, host name and IP settings, restarts or factory-resets it. A new server
+address or IP setting is only kept if the agent reaches the server with it within 2 minutes.
+
+### Linux agent
+
+The page of a Linux agent shows a one-line installer:
+
+```bash
+curl -fsSL https://<server>/install/linux.sh | sudo sh -s -- <enrollment-token>
+```
+
+`/install/linux.sh` downloads the agent from the [Agent-Linux](https://github.com/NetIgnite-project/Agent-Linux)
+releases (`NETIGNITE_LINUX_AGENT_REPO`; the newest release, pre-releases included, or the tag in
+`NETIGNITE_LINUX_AGENT_VERSION`), checks it against `SHA256SUMS`, pairs it and installs the
+systemd service.
+
 ### Upgrading from v1
 
 The v2 image uses the same `/opt/netignite/data` and `/opt/netignite/config` volumes as v1. Its
@@ -77,7 +102,7 @@ bun run dev
 
 The dev server runs on <http://localhost:18232> (port 18232 in dev and prod, an exception to the
 style guide's 12xxx ports kept for v1 compatibility). Endpoints: `/api/v1/**`, `/api/health`,
-`/api/docs/v1` (OpenAPI reference), `/ws/agent`.
+`/api/docs/v1` (OpenAPI reference), `/ws/agent`, `/ws/console`, `/install/linux.sh`.
 
 After changing the API, regenerate the typed client (boots the API in-process, no server needed):
 
@@ -101,9 +126,9 @@ bun run api-client:generate
 
 | Path | What it is |
 | --- | --- |
-| `server/lib/agents/` | Agent protocol, credentials, gateway and live connection registry |
+| `server/lib/agents/` | Agent protocol, credentials, gateway, live connection registry, console relay, Linux install script |
 | `server/lib/devices/` | Device permissions (sharing roles), status polling, power actions |
-| `server/lib/firmware/` | Firmware catalog (GitHub release sync), NVS image writer for the web installer |
+| `server/lib/firmware/` | Firmware catalog (GitHub release sync), NVS image writer for the web installer, OTA updates |
 | `server/lib/api/versions/v1/routes/` | REST routes (`agents`, `devices`, `firmware`, `auth`, `account`, `admin`) |
 | `server/lib/migration/v1Import.ts` | v1 database import |
 | `app/pages/dashboard/` | Dashboard: overview, devices, agents, settings, admin |

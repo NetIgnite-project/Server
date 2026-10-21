@@ -72,6 +72,20 @@ function getRoutesConfig(): UseSubrouterPathDynamics.RoutesConfig {
 		},
 	};
 
+	if (!isNew && agent?.value?.kind === "esp32" && agent.value.capabilities.includes("logs")) {
+		routes[`${base}/console`] = {
+			isNavLink: true,
+			label: "Console",
+			icon: "i-lucide-terminal",
+			getDynamicValues() {
+				return {
+					seoSettings: { title: `Console · ${name}`, description: `Log and control of ${name}` },
+					breadcrumbItems: [{ label: name, to: base }, { label: "Console" }],
+				};
+			},
+		};
+	}
+
 	if (!isNew && agent?.value?.kind === "esp32") {
 		routes[`${base}/install`] = {
 			isNavLink: true,
