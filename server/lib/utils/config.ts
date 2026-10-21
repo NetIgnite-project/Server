@@ -132,9 +132,6 @@ export class ConfigHandler {
 
 		APP_URL: CS.string(),
 
-		// Encrypts SSH credentials in the database. Default: a key generated in CONFIG_BASE_DIR/secrets.key.
-		SECRETS_KEY: CS.string().optional(),
-
 		// ESP32 firmware for the web installer and OTA updates, synced from the GitHub releases of
 		// FIRMWARE_REPO. FIRMWARE_PUBLIC_KEY: path to a PEM ECDSA P-256 public key; when set, only
 		// releases with a valid firmware.sig are accepted.

@@ -68,10 +68,13 @@ Follow the LeiCraftMC Style Guides: https://github.com/LeiCraftMC/Style-Guides.
 - **Console** (`server/lib/agents/console.ts`, `/ws/console`): the browser authenticates with its
   first message (`{type:"auth", token, agent_id}`), owner only, Origin must be NETIGNITE_APP_URL;
   the session is checked again every minute.
-- **SSH** (`server/lib/ssh/`): logins are owner-only and write-only; secrets go through
-  `Secrets` (`server/lib/utils/secrets.ts`) and are only sent to the device's agent in
-  `SSH_CHECK`/`SSH_EXEC`. `SSH_EXEC` needs a trusted host key; changing host or port un-trusts it.
-  `DeviceActions.hostControl` prefers the device's host agent, then SSH.
+- **SSH** (`server/lib/ssh/`): off unless the server setting `ssh_enabled` is on. The server
+  stores no secrets: agents keep their own key pairs (one for shutdown, one for reboot) and report
+  the public keys in HELLO (`agents.ssh_keys`); `SshLogins.setupHints` turns them into
+  forced-command `authorized_keys` lines. `SSH_CHECK`/`SSH_POWER` carry only host, port, user and
+  host key (capability `ssh.power`; beta agents with `ssh` are ignored). `SSH_POWER` needs a
+  trusted host key; changing host or port un-trusts it. `DeviceActions.hostControl` prefers the
+  device's host agent, then SSH. The SQL table is still called `device_ssh_credentials`.
 - **Enrollment** takes the agent's `kind`; a token of another kind gets 409 and stays valid.
 - Run Biome's autofix only on the files you changed: on the whole tree it rewrites `@ts-ignore` to
   `@ts-expect-error`, which breaks `nuxt typecheck`.

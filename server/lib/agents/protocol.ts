@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { AgentSettings } from "../api/utils/shared-models/netigniteData";
+import { SshKeys } from "../ssh/keys";
 
 /**
  * NetIgnite agent protocol, version 2.
@@ -41,8 +42,9 @@ export namespace AgentProtocol {
 		// REBOOT, FACTORY_RESET
 		"device.reboot",
 		"device.reset",
-		// SSH_CHECK, SSH_EXEC (logs into devices in the agent's network)
-		"ssh",
+		// SSH_CHECK, SSH_POWER: logs in to devices in the agent's network with its own keys (HELLO
+		// `ssh_keys`) to shut them down or reboot them. Agents only offer it over TLS.
+		"ssh.power",
 	] as const;
 	export type Capability = (typeof Capabilities)[number];
 
@@ -66,14 +68,14 @@ export namespace AgentProtocol {
 	export type LogLevel = "error" | "warn" | "info" | "debug";
 
 	/**
-	 * An SSH login for SSH_CHECK / SSH_EXEC. `host_key`: the trusted fingerprint (`SHA256:…`); the
-	 * agent aborts before sending credentials if the server's key differs.
+	 * Where SSH_CHECK / SSH_POWER log in. No credentials: the agent logs in with its own key for the
+	 * action. `host_key`: the trusted fingerprint (`SHA256:…`); the agent stops before
+	 * authenticating if the device presents another one.
 	 */
 	export type SshTarget = {
 		host: string;
 		port: number;
 		username: string;
-		auth: { type: "password"; password: string } | { type: "key"; private_key: string };
 		host_key: string | null;
 	};
 
@@ -81,10 +83,19 @@ export namespace AgentProtocol {
 		/** Whether the SSH port accepted the connection. */
 		online: boolean;
 		host_key?: string;
-		authenticated?: boolean;
-		/** `host_key_mismatch`, `auth_failed` or a short message. */
+		/** Whether the device accepted the agent's shutdown key / reboot key. */
+		shutdown?: boolean;
+		reboot?: boolean;
+		/** `host_key_mismatch` or a short message. */
 		error?: string;
 	};
+
+	/** The agent's SSH public keys (`ssh-ed25519 <base64>`), one per action. */
+	export const SshPublicKeys = z.object({
+		shutdown: z.string().refine(SshKeys.isPublicKey, "Invalid SSH public key"),
+		reboot: z.string().refine(SshKeys.isPublicKey, "Invalid SSH public key"),
+	});
+	export type SshPublicKeys = z.infer<typeof SshPublicKeys>;
 
 	/** CONFIG_SET: only the fields present change. Server URL and IP changes are tried first. */
 	export type ConfigSet = {
@@ -132,6 +143,9 @@ export namespace AgentProtocol {
 		capabilities: z.array(z.string().max(64)).max(64),
 		// Free-form diagnostics shown in the dashboard (IP addresses, RSSI, reset reason, ...).
 		info: z.record(z.string(), z.unknown()).optional(),
+		// With `ssh.power`: the public keys the device's authorized_keys must allow. Invalid keys are
+		// dropped (the agent can't do SSH then) instead of rejecting the whole HELLO.
+		ssh_keys: SshPublicKeys.optional().catch(undefined),
 	});
 	export type Hello = z.infer<typeof Hello>;
 
@@ -185,13 +199,17 @@ export namespace AgentProtocol {
 		REBOOT: { req: Record<string, never>; res: Record<string, never> };
 		/** Erase Wi-Fi, server and credential, then restart. The agent has to be set up again. */
 		FACTORY_RESET: { req: Record<string, never>; res: Record<string, never> };
-		/** Log in over SSH without opening a session (forced commands never run). */
+		/**
+		 * Log in with each of the agent's two keys without opening a session (forced commands never
+		 * run): is the device up, is it the one we know, which keys does it accept?
+		 */
 		SSH_CHECK: { req: SshTarget; res: SshCheckResult };
 		/**
-		 * Log in (only with a trusted host key) and run the fixed shutdown or reboot command for the
-		 * OS: `[sudo -n ]shutdown -h|-r now`, or `shutdown /s|/r /t 0`.
+		 * Log in with the action's key (only with a trusted host key) and request the fixed command
+		 * for the OS: `[sudo -n ]shutdown -h|-r now`, or `shutdown /s|/r /t 0`. The device's
+		 * authorized_keys line forces the same command for that key.
 		 */
-		SSH_EXEC: {
+		SSH_POWER: {
 			req: SshTarget & {
 				host_key: string;
 				action: "shutdown" | "reboot";
@@ -228,8 +246,8 @@ export namespace AgentProtocol {
 			case "FACTORY_RESET":
 				return "device.reset";
 			case "SSH_CHECK":
-			case "SSH_EXEC":
-				return "ssh";
+			case "SSH_POWER":
+				return "ssh.power";
 			case "STATUS": {
 				const { target } = payload as Commands["STATUS"]["req"];
 				if (target.type === "link_local") return "status.link_local";

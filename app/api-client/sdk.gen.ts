@@ -739,7 +739,7 @@ export const deleteDevicesByDeviceIdSsh = <TComposable extends Composable = '$fe
 /**
  * Get a device's SSH login
  *
- * The SSH login without its password or private key. Owner only.
+ * Where the device's agent logs in, and the lines to add on the device. Owner only.
  */
 export const getDevicesByDeviceIdSsh = <TComposable extends Composable = '$fetch', DefaultT extends GetDevicesByDeviceIdSshResponse = GetDevicesByDeviceIdSshResponse>(options: Options<TComposable, GetDevicesByDeviceIdSshData, GetDevicesByDeviceIdSshResponse, DefaultT>): RequestResult<TComposable, GetDevicesByDeviceIdSshResponse | DefaultT, DefaultT> => (options.client ?? client).get<TComposable, GetDevicesByDeviceIdSshResponse | DefaultT, GetDevicesByDeviceIdSshError, DefaultT>({
     security: [{ scheme: 'bearer', type: 'http' }],
@@ -750,7 +750,7 @@ export const getDevicesByDeviceIdSsh = <TComposable extends Composable = '$fetch
 /**
  * Set a device's SSH login
  *
- * Stores the login the device's agent uses for shutdown and reboot over SSH. With `auth: { type: "generate_key" }` the server creates an Ed25519 key pair and returns the public key for the device's authorized_keys. Changing host or port un-trusts the host key.
+ * Stores where the device's agent logs in for shutdown and reboot over SSH. The agent logs in with its own keys; the answer has the authorized_keys lines for the device. Changing host or port un-trusts the host key. Needs the server setting `ssh_enabled`.
  */
 export const putDevicesByDeviceIdSsh = <TComposable extends Composable = '$fetch', DefaultT extends PutDevicesByDeviceIdSshResponse = PutDevicesByDeviceIdSshResponse>(options: Options<TComposable, PutDevicesByDeviceIdSshData, PutDevicesByDeviceIdSshResponse, DefaultT>): RequestResult<TComposable, PutDevicesByDeviceIdSshResponse | DefaultT, DefaultT> => (options.client ?? client).put<TComposable, PutDevicesByDeviceIdSshResponse | DefaultT, PutDevicesByDeviceIdSshError, DefaultT>({
     security: [{ scheme: 'bearer', type: 'http' }],
@@ -765,7 +765,7 @@ export const putDevicesByDeviceIdSsh = <TComposable extends Composable = '$fetch
 /**
  * Test a device's SSH login
  *
- * The device's agent logs in (without running anything) and reports the device's host key fingerprint. Trust it with `POST /ssh/trust` to allow shutdown and reboot.
+ * The device's agent logs in with each of its two keys (without running anything) and reports the device's host key fingerprint and which keys the device accepts. Trust the host key with `POST /ssh/trust` to allow shutdown and reboot.
  */
 export const postDevicesByDeviceIdSshTest = <TComposable extends Composable = '$fetch', DefaultT extends PostDevicesByDeviceIdSshTestResponse = PostDevicesByDeviceIdSshTestResponse>(options: Options<TComposable, PostDevicesByDeviceIdSshTestData, PostDevicesByDeviceIdSshTestResponse, DefaultT>): RequestResult<TComposable, PostDevicesByDeviceIdSshTestResponse | DefaultT, DefaultT> => (options.client ?? client).post<TComposable, PostDevicesByDeviceIdSshTestResponse | DefaultT, PostDevicesByDeviceIdSshTestError, DefaultT>({
     security: [{ scheme: 'bearer', type: 'http' }],

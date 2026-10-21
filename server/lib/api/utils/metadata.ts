@@ -12,8 +12,13 @@ export class RuntimeMetadata {
 				registration_enabled: z.boolean().default(false),
 				/** Which ESP32 firmware releases the installer and OTA updates offer by default. */
 				firmware_channel: FirmwareSettings.Channel.default("stable"),
+				/**
+				 * Shutdown and reboot over SSH through the device's agent. Off by default: the agent on the
+				 * device itself is the safer way.
+				 */
+				ssh_enabled: z.boolean().default(false),
 			})
-			.default({ registration_enabled: false, firmware_channel: "stable" }),
+			.default({ registration_enabled: false, firmware_channel: "stable", ssh_enabled: false }),
 		/** Outcome of the last firmware release sync from GitHub. */
 		firmware_sync: z
 			.object({

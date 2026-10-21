@@ -13,6 +13,8 @@ const Settings = z.object({
 	registration_enabled: z.boolean(),
 	/** Firmware releases the installer and OTA updates offer by default. */
 	firmware_channel: FirmwareSettings.Channel,
+	/** Shutdown and reboot over SSH through the device's agent (off by default). */
+	ssh_enabled: z.boolean(),
 });
 
 router.get(

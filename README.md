@@ -65,23 +65,22 @@ address or IP setting is only kept if the agent reaches the server with it withi
 
 ### SSH shutdown and reboot
 
-A device's **SSH** tab (owner only) stores an SSH login: a key pair the server generates (the tab
-shows the `authorized_keys` and `sudoers` lines for the device) or a password. The device's agent
-(an ESP32 with firmware 2.0.0 or newer, or a Linux agent in Wake-on-LAN mode, in the same
-network) logs in for shutdown and reboot; it runs only the fixed `shutdown` commands. Passwords and private keys are stored encrypted with the server's
-secrets key (`NETIGNITE_SECRETS_KEY`, or `config/secrets.key`; back it up) and are never returned by
-the API. The device's host key is trusted on first use: test the login, compare the fingerprint,
-trust it.
+Off by default: an admin turns it on under **Server Settings** (`ssh_enabled`). For devices that
+can't run the agent themselves, the device's agent in the same network (an ESP32 with firmware
+2.0.0 or newer, or a Linux agent 1.0.0 or newer in Wake-on-LAN mode) logs in over SSH.
 
-**Prefer the Linux agent** for Linux machines (installed on the device, chosen as its Linux agent):
-it can only shut down and reboot that machine, and no login to the device is
-stored anywhere. With SSH, the server holds a login to the device and sends it to the agent for
-every command, so whoever gets the database and its secrets key can log in. If you use SSH, log in
-as a **dedicated, unprivileged user** that may only run the two shutdown commands (the generated
-`authorized_keys` line and `sudoers` line do exactly that), never as root or an administrator, and
-prefer a generated key over a password. Windows only shuts down for administrators, so there the
-login can't be restricted: use a separate account only for NetIgnite, a generated key, and accept
-the key only from the agent (`restrict,from="<agent's IP>" ssh-ed25519 …`).
+**No secrets on the server.** Each agent creates two Ed25519 key pairs of its own, one for
+shutdown and one for reboot, keeps the private keys and reports only the public keys (HELLO
+`ssh_keys`). A device's **SSH** tab (owner only) stores host, port, username and OS, and shows two
+`authorized_keys` lines, each with a forced command (`restrict,command="sudo -n shutdown -h now"
+ssh-ed25519 …`), plus the `sudoers` line. So each key can run exactly one command, also on
+Windows (`shutdown /s /t 0` in `administrators_authorized_keys`). Agents only offer SSH over a TLS
+connection to the server and allow at most 10 SSH logins a minute. The device's host key is
+trusted on first use: test the login, compare the fingerprint, trust it.
+
+**Prefer the agent on the device** where it runs (Linux, Windows, macOS): no login to the device
+exists at all. If you use SSH, log in as a dedicated user without other rights (on Windows, an
+administrator account is required for shutdown).
 
 ### Linux agent
 

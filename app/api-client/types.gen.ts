@@ -1072,6 +1072,7 @@ export type GetAdminSettingsResponses = {
         data: {
             registration_enabled: boolean;
             firmware_channel: 'stable' | 'prerelease';
+            ssh_enabled: boolean;
         };
     };
 };
@@ -1082,6 +1083,7 @@ export type PutAdminSettingsData = {
     body?: {
         registration_enabled?: boolean;
         firmware_channel?: 'stable' | 'prerelease';
+        ssh_enabled?: boolean;
     };
     path?: never;
     query?: never;
@@ -1112,6 +1114,7 @@ export type PutAdminSettingsResponses = {
         data: {
             registration_enabled: boolean;
             firmware_channel: 'stable' | 'prerelease';
+            ssh_enabled: boolean;
         };
     };
 };
@@ -3393,18 +3396,19 @@ export type GetDevicesByDeviceIdSshResponses = {
         code: 200;
         message: 'SSH login retrieved';
         data: {
+            enabled: boolean;
             configured: boolean;
             host: string | null;
             effective_host: string | null;
             port: number | null;
             username: string | null;
-            auth_type: 'password' | 'key' | null;
             os: 'posix' | 'windows' | null;
             sudo: boolean | null;
-            public_key: string | null;
             host_key: string | null;
             authorized_keys: string | null;
+            authorized_keys_file: string | null;
             sudoers: string | null;
+            agent_keys: boolean;
             agent_ready: boolean;
         };
     };
@@ -3419,14 +3423,6 @@ export type PutDevicesByDeviceIdSshData = {
         username: string;
         os?: 'posix' | 'windows';
         sudo?: boolean;
-        auth: {
-            type: 'password';
-            password: string;
-        } | {
-            type: 'generate_key';
-        } | {
-            type: 'keep';
-        };
     };
     path: {
         deviceID: number;
@@ -3460,6 +3456,14 @@ export type PutDevicesByDeviceIdSshErrors = {
         code: 404;
         message: 'Device not found';
     };
+    /**
+     * SSH is turned off on this server
+     */
+    409: {
+        success: false;
+        code: 409;
+        message: 'SSH is turned off on this server';
+    };
 };
 
 export type PutDevicesByDeviceIdSshError = PutDevicesByDeviceIdSshErrors[keyof PutDevicesByDeviceIdSshErrors];
@@ -3473,18 +3477,19 @@ export type PutDevicesByDeviceIdSshResponses = {
         code: 200;
         message: 'SSH login saved';
         data: {
+            enabled: boolean;
             configured: boolean;
             host: string | null;
             effective_host: string | null;
             port: number | null;
             username: string | null;
-            auth_type: 'password' | 'key' | null;
             os: 'posix' | 'windows' | null;
             sudo: boolean | null;
-            public_key: string | null;
             host_key: string | null;
             authorized_keys: string | null;
+            authorized_keys_file: string | null;
             sudoers: string | null;
+            agent_keys: boolean;
             agent_ready: boolean;
         };
     };
@@ -3527,12 +3532,12 @@ export type PostDevicesByDeviceIdSshTestErrors = {
         message: 'Device or SSH login not found';
     };
     /**
-     * The device's agent can't log in over SSH
+     * SSH is off, or no agent is assigned to the device
      */
     409: {
         success: false;
         code: 409;
-        message: 'The device\'s agent can\'t log in over SSH';
+        message: 'SSH is off, or no agent is assigned to the device';
     };
     /**
      * The agent is offline
@@ -3564,9 +3569,10 @@ export type PostDevicesByDeviceIdSshTestResponses = {
         message: 'SSH login tested';
         data: {
             online: boolean;
-            authenticated: boolean;
             host_key: string | null;
             trusted: boolean;
+            shutdown: boolean;
+            reboot: boolean;
             error: string | null;
         };
     };
@@ -3610,6 +3616,14 @@ export type PostDevicesByDeviceIdSshTrustErrors = {
         code: 404;
         message: 'Device or SSH login not found';
     };
+    /**
+     * SSH is turned off on this server
+     */
+    409: {
+        success: false;
+        code: 409;
+        message: 'SSH is turned off on this server';
+    };
 };
 
 export type PostDevicesByDeviceIdSshTrustError = PostDevicesByDeviceIdSshTrustErrors[keyof PostDevicesByDeviceIdSshTrustErrors];
@@ -3623,18 +3637,19 @@ export type PostDevicesByDeviceIdSshTrustResponses = {
         code: 200;
         message: 'Host key trusted';
         data: {
+            enabled: boolean;
             configured: boolean;
             host: string | null;
             effective_host: string | null;
             port: number | null;
             username: string | null;
-            auth_type: 'password' | 'key' | null;
             os: 'posix' | 'windows' | null;
             sudo: boolean | null;
-            public_key: string | null;
             host_key: string | null;
             authorized_keys: string | null;
+            authorized_keys_file: string | null;
             sudoers: string | null;
+            agent_keys: boolean;
             agent_ready: boolean;
         };
     };

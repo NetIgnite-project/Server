@@ -8,7 +8,7 @@ import { DB } from "../../../../../db";
 import { DeviceActionError, DeviceActions } from "../../../../../devices/actions";
 import { DevicePermissions } from "../../../../../devices/permissions";
 import { DeviceStatusService } from "../../../../../devices/status";
-import { SshCredentialError, SshCredentials } from "../../../../../ssh/credentials";
+import { SshLogins } from "../../../../../ssh/logins";
 import { APIResponse } from "../../../../utils/api-res";
 import { APIResponseSpec, APIRouteSpec } from "../../../../utils/specHelpers";
 import { DOCS_TAGS } from "../../docs";
@@ -57,7 +57,9 @@ async function toDeviceResponses(userID: number, devices: DevicePermissions.Devi
 	const agents = await getAgentSummaries(
 		devices.flatMap((device) => [device.agent_id, device.host_agent_id]),
 	);
-	const sshTrusted = SshCredentials.trustedDeviceIDs(devices.map((device) => device.id));
+	const sshTrusted = (await SshLogins.enabled())
+		? SshLogins.trustedDeviceIDs(devices.map((device) => device.id))
+		: new Set<number>();
 	const favorites = new Set(
 		(
 			await DB.instance()
@@ -642,48 +644,52 @@ router.delete(
 
 // --- SSH login (owner only) ---------------------------------------------------------------------
 
-function toSshResponse(device: DB.Models.Device): DevicesModel.Ssh.Response {
-	const credential = SshCredentials.get(device.id);
-	const agentReady = SshCredentials.agentFor(device) !== null;
-	if (!credential) {
+async function toSshResponse(device: DB.Models.Device): Promise<DevicesModel.Ssh.Response> {
+	const login = SshLogins.get(device.id);
+	const keys = SshLogins.agentKeys(device);
+	const common = {
+		enabled: await SshLogins.enabled(),
+		agent_keys: keys !== null,
+		agent_ready: SshLogins.agentFor(device) !== null,
+	};
+	if (!login) {
 		return {
+			...common,
 			configured: false,
 			host: null,
 			effective_host: device.status_address,
 			port: null,
 			username: null,
-			auth_type: null,
 			os: null,
 			sudo: null,
-			public_key: null,
 			host_key: null,
 			authorized_keys: null,
+			authorized_keys_file: null,
 			sudoers: null,
-			agent_ready: agentReady,
 		};
 	}
 	return {
+		...common,
 		configured: true,
-		host: credential.host,
-		effective_host: SshCredentials.host(device, credential),
-		port: credential.port,
-		username: credential.username,
-		auth_type: credential.auth_type,
-		os: credential.os,
-		sudo: credential.sudo,
-		public_key: credential.public_key,
-		host_key: credential.host_key,
-		...SshCredentials.setupHints(credential),
-		agent_ready: agentReady,
+		host: login.host,
+		effective_host: SshLogins.host(device, login),
+		port: login.port,
+		username: login.username,
+		os: login.os,
+		sudo: login.sudo,
+		host_key: login.host_key,
+		...SshLogins.setupHints(login, device.agent_id, keys),
 	};
 }
+
+const SSH_DISABLED = "SSH is turned off on this server (Server Settings)";
 
 router.get(
 	"/:deviceID/ssh",
 
 	APIRouteSpec.authenticated({
 		summary: "Get a device's SSH login",
-		description: "The SSH login without its password or private key. Owner only.",
+		description: "Where the device's agent logs in, and the lines to add on the device. Owner only.",
 		tags: [DOCS_TAGS.DEVICES],
 		responses: APIResponseSpec.describeBasic(
 			APIResponseSpec.success("SSH login retrieved", DevicesModel.Ssh.Response),
@@ -695,7 +701,7 @@ router.get(
 	async (c) => {
 		const device = getDevice(c);
 		if (!DevicePermissions.can(device.access_role, "manage")) return forbidden(c, "manage");
-		return APIResponse.success(c, "SSH login retrieved", toSshResponse(device));
+		return APIResponse.success(c, "SSH login retrieved", await toSshResponse(device));
 	},
 );
 
@@ -705,14 +711,15 @@ router.put(
 	APIRouteSpec.authenticated({
 		summary: "Set a device's SSH login",
 		description:
-			"Stores the login the device's agent uses for shutdown and reboot over SSH. With " +
-			'`auth: { type: "generate_key" }` the server creates an Ed25519 key pair and returns the public key ' +
-			"for the device's authorized_keys. Changing host or port un-trusts the host key.",
+			"Stores where the device's agent logs in for shutdown and reboot over SSH. The agent logs in " +
+			"with its own keys; the answer has the authorized_keys lines for the device. Changing host " +
+			"or port un-trusts the host key. Needs the server setting `ssh_enabled`.",
 		tags: [DOCS_TAGS.DEVICES],
 		responses: APIResponseSpec.describeWithWrongInputs(
 			APIResponseSpec.success("SSH login saved", DevicesModel.Ssh.Response),
 			APIResponseSpec.forbidden("Only the device's owner can do this"),
 			APIResponseSpec.notFound("Device not found"),
+			APIResponseSpec.conflict("SSH is turned off on this server"),
 		),
 	}),
 
@@ -721,18 +728,14 @@ router.put(
 	async (c) => {
 		const device = getDevice(c);
 		if (!DevicePermissions.can(device.access_role, "manage")) return forbidden(c, "manage");
+		if (!(await SshLogins.enabled())) return APIResponse.conflict(c, SSH_DISABLED);
 
 		const body = c.req.valid("json");
 		if (!body.host && !device.status_address) {
 			return APIResponse.badRequest(c, "Enter the device's host name or IP address");
 		}
-		try {
-			SshCredentials.save(device, body);
-		} catch (error) {
-			if (error instanceof SshCredentialError) return APIResponse.badRequest(c, error.message);
-			throw error;
-		}
-		return APIResponse.success(c, "SSH login saved", toSshResponse(device));
+		SshLogins.save(device, body);
+		return APIResponse.success(c, "SSH login saved", await toSshResponse(device));
 	},
 );
 
@@ -752,7 +755,7 @@ router.delete(
 	async (c) => {
 		const device = getDevice(c);
 		if (!DevicePermissions.can(device.access_role, "manage")) return forbidden(c, "manage");
-		SshCredentials.delete(device.id);
+		SshLogins.delete(device.id);
 		return APIResponse.successNoData(c, "SSH login removed");
 	},
 );
@@ -763,14 +766,15 @@ router.post(
 	APIRouteSpec.authenticated({
 		summary: "Test a device's SSH login",
 		description:
-			"The device's agent logs in (without running anything) and reports the device's host key " +
-			"fingerprint. Trust it with `POST /ssh/trust` to allow shutdown and reboot.",
+			"The device's agent logs in with each of its two keys (without running anything) and " +
+			"reports the device's host key fingerprint and which keys the device accepts. Trust the " +
+			"host key with `POST /ssh/trust` to allow shutdown and reboot.",
 		tags: [DOCS_TAGS.DEVICES],
 		responses: APIResponseSpec.describeBasic(
 			APIResponseSpec.success("SSH login tested", DevicesModel.Ssh.TestResponse),
 			APIResponseSpec.forbidden("Only the device's owner can do this"),
 			APIResponseSpec.notFound("Device or SSH login not found"),
-			APIResponseSpec.conflict("The device's agent can't log in over SSH"),
+			APIResponseSpec.conflict("SSH is off, or no agent is assigned to the device"),
 			APIResponseSpec.serviceUnavailable("The agent is offline"),
 			APIResponseSpec.gatewayTimeout("The agent didn't answer in time"),
 		),
@@ -780,11 +784,13 @@ router.post(
 		const device = getDevice(c);
 		if (!DevicePermissions.can(device.access_role, "manage")) return forbidden(c, "manage");
 
-		const credential = SshCredentials.get(device.id);
-		const target = credential ? SshCredentials.target(device, credential) : null;
-		if (!credential || !target) return APIResponse.notFound(c, "SSH login not found");
+		if (!(await SshLogins.enabled())) return APIResponse.conflict(c, SSH_DISABLED);
 
-		const agent = SshCredentials.agentFor(device);
+		const login = SshLogins.get(device.id);
+		const target = login ? SshLogins.target(device, login) : null;
+		if (!login || !target) return APIResponse.notFound(c, "SSH login not found");
+
+		const agent = SshLogins.agentFor(device);
 		if (!agent) {
 			return device.agent_id === null
 				? APIResponse.conflict(c, "No agent is assigned to this device")
@@ -792,12 +798,14 @@ router.post(
 		}
 
 		try {
-			const result = await agent.request("SSH_CHECK", target, 10_000);
+			// Two logins (one per key), each with the agent's own connect timeout.
+			const result = await agent.request("SSH_CHECK", target, 25_000);
 			return APIResponse.success(c, "SSH login tested", {
 				online: result.online,
-				authenticated: result.authenticated ?? false,
 				host_key: result.host_key ?? null,
-				trusted: !!result.host_key && result.host_key === credential.host_key,
+				trusted: !!result.host_key && result.host_key === login.host_key,
+				shutdown: result.shutdown ?? false,
+				reboot: result.reboot ?? false,
 				error: result.error ?? null,
 			} satisfies DevicesModel.Ssh.TestResponse);
 		} catch (error) {
@@ -822,6 +830,7 @@ router.post(
 			APIResponseSpec.success("Host key trusted", DevicesModel.Ssh.Response),
 			APIResponseSpec.forbidden("Only the device's owner can do this"),
 			APIResponseSpec.notFound("Device or SSH login not found"),
+			APIResponseSpec.conflict("SSH is turned off on this server"),
 		),
 	}),
 
@@ -830,9 +839,10 @@ router.post(
 	async (c) => {
 		const device = getDevice(c);
 		if (!DevicePermissions.can(device.access_role, "manage")) return forbidden(c, "manage");
-		if (!SshCredentials.get(device.id)) return APIResponse.notFound(c, "SSH login not found");
+		if (!(await SshLogins.enabled())) return APIResponse.conflict(c, SSH_DISABLED);
+		if (!SshLogins.get(device.id)) return APIResponse.notFound(c, "SSH login not found");
 
-		SshCredentials.trust(device.id, c.req.valid("json").host_key);
-		return APIResponse.success(c, "Host key trusted", toSshResponse(device));
+		SshLogins.trust(device.id, c.req.valid("json").host_key);
+		return APIResponse.success(c, "Host key trusted", await toSshResponse(device));
 	},
 );

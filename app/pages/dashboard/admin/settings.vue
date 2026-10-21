@@ -40,6 +40,22 @@ async function setRegistration(enabled: boolean) {
 	await settings.refresh();
 }
 
+async function setSsh(enabled: boolean) {
+	saving.value = true;
+	const res = await useAPI((api) => api.putAdminSettings({ body: { ssh_enabled: enabled } }));
+	saving.value = false;
+	if (!res.success) {
+		toast.add({ title: "Couldn't save the setting", description: res.message, color: "error" });
+	} else {
+		toast.add({
+			title: enabled ? "SSH turned on" : "SSH turned off",
+			color: "success",
+			icon: "i-lucide-check",
+		});
+	}
+	await settings.refresh();
+}
+
 // --- Firmware ---
 
 const firmwareSync = await useAPIAsyncData("admin-firmware-sync", async () => {
@@ -120,6 +136,26 @@ async function syncNow() {
 								:disabled="!settings.data.value"
 								aria-label="Public sign-up"
 								@update:model-value="setRegistration"
+							/>
+						</div>
+					</DashboardSectionCard>
+
+					<DashboardSectionCard title="SSH" description="Shutdown and reboot over SSH" icon="i-lucide-key-square">
+						<div class="flex items-start justify-between gap-4">
+							<div>
+								<h4 class="font-medium text-white">Shutdown and reboot over SSH</h4>
+								<p class="mt-1 text-sm text-slate-400">
+									For devices that can't run the NetIgnite agent: their ESP32 or Linux agent logs in over
+									SSH with its own keys, each limited to shutdown or reboot. Nothing secret is stored on this
+									server. Off by default; the agent on the device is the safer way.
+								</p>
+							</div>
+							<USwitch
+								:model-value="settings.data.value?.ssh_enabled ?? false"
+								:loading="saving || settings.loading.value"
+								:disabled="!settings.data.value"
+								aria-label="Shutdown and reboot over SSH"
+								@update:model-value="setSsh"
 							/>
 						</div>
 					</DashboardSectionCard>

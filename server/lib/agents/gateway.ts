@@ -158,6 +158,8 @@ export class AgentGatewayRunner {
 				capabilities: hello.data.capabilities,
 				version: hello.data.version,
 				info: hello.data.info ?? null,
+				// Mirrors the last HELLO: new keys after a factory reset, none if SSH isn't offered.
+				ssh_keys: hello.data.ssh_keys ?? null,
 				last_seen_at: Date.now(),
 			})
 			.where(eq(DB.Tables.agents.id, connection.agentID));

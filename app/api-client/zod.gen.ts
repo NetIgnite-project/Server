@@ -422,13 +422,15 @@ export const zGetAdminSettingsResponse = z.object({
     message: z.literal('Settings retrieved'),
     data: z.object({
         registration_enabled: z.boolean(),
-        firmware_channel: z.enum(['stable', 'prerelease'])
+        firmware_channel: z.enum(['stable', 'prerelease']),
+        ssh_enabled: z.boolean()
     })
 });
 
 export const zPutAdminSettingsBody = z.object({
     registration_enabled: z.boolean().optional(),
-    firmware_channel: z.enum(['stable', 'prerelease']).optional()
+    firmware_channel: z.enum(['stable', 'prerelease']).optional(),
+    ssh_enabled: z.boolean().optional()
 });
 
 /**
@@ -440,7 +442,8 @@ export const zPutAdminSettingsResponse = z.object({
     message: z.literal('Settings updated'),
     data: z.object({
         registration_enabled: z.boolean(),
-        firmware_channel: z.enum(['stable', 'prerelease'])
+        firmware_channel: z.enum(['stable', 'prerelease']),
+        ssh_enabled: z.boolean()
     })
 });
 
@@ -1617,18 +1620,19 @@ export const zGetDevicesByDeviceIdSshResponse = z.object({
     code: z.literal(200),
     message: z.literal('SSH login retrieved'),
     data: z.object({
+        enabled: z.boolean(),
         configured: z.boolean(),
         host: z.string().nullable(),
         effective_host: z.string().nullable(),
         port: z.number().nullable(),
         username: z.string().nullable(),
-        auth_type: z.enum(['password', 'key']).nullable(),
         os: z.enum(['posix', 'windows']).nullable(),
         sudo: z.boolean().nullable(),
-        public_key: z.string().nullable(),
         host_key: z.string().nullable(),
         authorized_keys: z.string().nullable(),
+        authorized_keys_file: z.string().nullable(),
         sudoers: z.string().nullable(),
+        agent_keys: z.boolean(),
         agent_ready: z.boolean()
     })
 });
@@ -1638,19 +1642,7 @@ export const zPutDevicesByDeviceIdSshBody = z.object({
     port: z.int().gte(1).lte(65535).optional().default(22),
     username: z.string().min(1).max(64).regex(/^[A-Za-z0-9._@\\-]+$/),
     os: z.enum(['posix', 'windows']).optional().default('posix'),
-    sudo: z.boolean().optional().default(true),
-    auth: z.union([
-        z.object({
-            type: z.literal('password'),
-            password: z.string().min(1).max(256)
-        }),
-        z.object({
-            type: z.literal('generate_key')
-        }),
-        z.object({
-            type: z.literal('keep')
-        })
-    ])
+    sudo: z.boolean().optional().default(true)
 });
 
 export const zPutDevicesByDeviceIdSshPath = z.object({
@@ -1665,18 +1657,19 @@ export const zPutDevicesByDeviceIdSshResponse = z.object({
     code: z.literal(200),
     message: z.literal('SSH login saved'),
     data: z.object({
+        enabled: z.boolean(),
         configured: z.boolean(),
         host: z.string().nullable(),
         effective_host: z.string().nullable(),
         port: z.number().nullable(),
         username: z.string().nullable(),
-        auth_type: z.enum(['password', 'key']).nullable(),
         os: z.enum(['posix', 'windows']).nullable(),
         sudo: z.boolean().nullable(),
-        public_key: z.string().nullable(),
         host_key: z.string().nullable(),
         authorized_keys: z.string().nullable(),
+        authorized_keys_file: z.string().nullable(),
         sudoers: z.string().nullable(),
+        agent_keys: z.boolean(),
         agent_ready: z.boolean()
     })
 });
@@ -1694,9 +1687,10 @@ export const zPostDevicesByDeviceIdSshTestResponse = z.object({
     message: z.literal('SSH login tested'),
     data: z.object({
         online: z.boolean(),
-        authenticated: z.boolean(),
         host_key: z.string().nullable(),
         trusted: z.boolean(),
+        shutdown: z.boolean(),
+        reboot: z.boolean(),
         error: z.string().nullable()
     })
 });
@@ -1717,18 +1711,19 @@ export const zPostDevicesByDeviceIdSshTrustResponse = z.object({
     code: z.literal(200),
     message: z.literal('Host key trusted'),
     data: z.object({
+        enabled: z.boolean(),
         configured: z.boolean(),
         host: z.string().nullable(),
         effective_host: z.string().nullable(),
         port: z.number().nullable(),
         username: z.string().nullable(),
-        auth_type: z.enum(['password', 'key']).nullable(),
         os: z.enum(['posix', 'windows']).nullable(),
         sudo: z.boolean().nullable(),
-        public_key: z.string().nullable(),
         host_key: z.string().nullable(),
         authorized_keys: z.string().nullable(),
+        authorized_keys_file: z.string().nullable(),
         sudoers: z.string().nullable(),
+        agent_keys: z.boolean(),
         agent_ready: z.boolean()
     })
 });
