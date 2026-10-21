@@ -73,6 +73,14 @@ secrets key (`NETIGNITE_SECRETS_KEY`, or `config/secrets.key`; back it up) and a
 the API. The device's host key is trusted on first use: test the login, compare the fingerprint,
 trust it.
 
+**Prefer the Linux agent** for Linux machines (installed on the device, chosen as its Linux agent):
+it can only shut down and reboot that machine, through polkit, and no login to the device is
+stored anywhere. With SSH, the server holds a login to the device and sends it to the agent for
+every command, so whoever gets the database and its secrets key can log in. If you use SSH, log in
+as a **dedicated, unprivileged user** that may only run the two shutdown commands (the generated
+`authorized_keys` line and `sudoers` line do exactly that), never as root or an administrator, and
+prefer a generated key over a password.
+
 ### Linux agent
 
 The page of a Linux agent shows a one-line installer:

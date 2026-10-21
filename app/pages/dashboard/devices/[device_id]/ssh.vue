@@ -150,6 +150,13 @@ async function remove() {
 	await device.refresh?.();
 }
 
+// Logins that can do anything on the device: the stored secret then grants full control.
+const privilegedUser = computed(() =>
+	["root", "administrator", "admin"].includes(
+		form.username.trim().toLowerCase().split("\\").pop() ?? "",
+	),
+);
+
 async function copy(text: string) {
 	try {
 		await navigator.clipboard.writeText(text);
@@ -172,6 +179,15 @@ async function copy(text: string) {
 			icon="i-lucide-key-square"
 		>
 			<UAlert
+				class="mb-6"
+				color="info"
+				variant="subtle"
+				icon="i-lucide-shield"
+				title="Prefer the NetIgnite Linux agent"
+				description="For a Linux machine, install the Linux agent on it and choose it as the device's Linux agent instead: it can only shut down and reboot that machine, and no login to it is stored on the server. With SSH, the server keeps a login to the device (encrypted) and sends it to the agent for every command. If you use SSH, log in as a dedicated user without other rights that may only shut down and reboot (see Prepare the device), never as root or an administrator, and prefer a generated key over a password."
+			/>
+
+			<UAlert
 				v-if="login.data.value && !login.data.value.agent_ready"
 				class="mb-6"
 				color="warning"
@@ -188,9 +204,17 @@ async function copy(text: string) {
 					</UFormField>
 					<UFormField label="Port"><UInput v-model.number="form.port" type="number" min="1" max="65535" class="w-full" /></UFormField>
 				</div>
-				<UFormField label="Username" required>
-					<UInput v-model="form.username" placeholder="admin" class="w-full sm:w-80" autocomplete="off" />
+				<UFormField label="Username" required description="A dedicated user without other rights, e.g. netignite.">
+					<UInput v-model="form.username" placeholder="netignite" class="w-full sm:w-80" autocomplete="off" />
 				</UFormField>
+				<UAlert
+					v-if="privilegedUser"
+					color="warning"
+					variant="subtle"
+					icon="i-lucide-triangle-alert"
+					title="This login can do anything on the device"
+					description="Anyone who gets hold of it (e.g. from a server backup and its secrets key) controls the device. Create a user that may only shut down and reboot instead."
+				/>
 				<UFormField label="Operating system">
 					<URadioGroup
 						v-model="form.os"

@@ -14,6 +14,23 @@ export default defineNuxtConfig({
 
 	css: ["~/assets/css/main.css"],
 
+	app: {
+		head: {
+			// Installable as an app (PWA): public/manifest.webmanifest, public/sw.js.
+			link: [
+				{ rel: "manifest", href: "/manifest.webmanifest" },
+				{ rel: "apple-touch-icon", href: "/static/pwa/apple-touch-icon.png" },
+			],
+			meta: [
+				{ name: "theme-color", content: "#0b0c1b" },
+				{ name: "mobile-web-app-capable", content: "yes" },
+				{ name: "apple-mobile-web-app-capable", content: "yes" },
+				{ name: "apple-mobile-web-app-title", content: "NetIgnite" },
+				{ name: "apple-mobile-web-app-status-bar-style", content: "black-translucent" },
+			],
+		},
+	},
+
 	vue: {
 		compilerOptions: {
 			// ESP Web Tools' web component (the ESP32 web installer).
