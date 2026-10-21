@@ -5,6 +5,7 @@ import path from "node:path";
 import { API } from "../server/lib/api";
 import { FirmwareCatalog } from "../server/lib/firmware/catalog";
 import { NVSImage } from "../server/lib/firmware/nvs";
+import { ProvisioningImage } from "../server/lib/firmware/provisioning";
 import { ConfigHandler } from "../server/lib/utils/config";
 import { makeAPIRequest } from "./helpers/api";
 import { type SeededSession, seedSession, seedUser } from "./helpers/seed";
@@ -282,7 +283,8 @@ describe("Flash image", () => {
 		expect(image.length).toBe(0x5000);
 		const text = new TextDecoder("latin1").decode(image);
 		expect(text).toContain("http://localhost:18232\0");
-		expect(text).toContain("Garage esp32\0");
+		// As a host name: the firmware uses its name for DHCP.
+		expect(text).toContain("Garage-esp32\0");
 
 		// Page header: active, version 2.
 		expect(new DataView(image.buffer).getUint32(0, true)).toBe(0xfffffffe);
@@ -323,7 +325,7 @@ describe("Flash image", () => {
 					entries: {
 						server: { type: "string", value: "https://netignite.example/base" },
 						enroll: { type: "string", value: token },
-						name: { type: "string", value: "Garage esp32" },
+						name: { type: "string", value: "Garage-esp32" },
 					},
 				},
 			],
@@ -424,5 +426,15 @@ describe("Firmware signatures", () => {
 		expect(release?.signature_verified).toBe(true);
 		// The signature is served too (for OTA updates).
 		await makeAPIRequest("/v1/firmware/3.0.2/files/firmware.sig", { authToken: owner.token });
+	});
+});
+
+describe("Provisioning image", () => {
+	test("agent names become valid host names", () => {
+		expect(ProvisioningImage.hostname("Garage ESP32")).toBe("Garage-ESP32");
+		expect(ProvisioningImage.hostname("Büro / Keller #2")).toBe("Buro-Keller-2");
+		expect(ProvisioningImage.hostname("--x--")).toBe("x");
+		expect(ProvisioningImage.hostname("日本")).toBe("");
+		expect(ProvisioningImage.hostname("a".repeat(80)).length).toBe(63);
 	});
 });

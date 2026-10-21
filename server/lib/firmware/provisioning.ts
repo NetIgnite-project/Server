@@ -21,11 +21,27 @@ export class ProvisioningImage {
 		}
 
 		const entries: Record<string, NVSImage.Value> = {};
-		for (const [key, value] of Object.entries(values)) {
-			if (manifest.nvs.keys.includes(key)) entries[key] = { type: "string", value };
+		const name = this.hostname(values.name);
+		for (const [key, value] of Object.entries({ ...values, name })) {
+			if (value && manifest.nvs.keys.includes(key)) entries[key] = { type: "string", value };
 		}
 
 		return NVSImage.generate([{ name: manifest.nvs.namespace, entries }], manifest.nvs.size);
+	}
+
+	/**
+	 * The firmware uses its name as the network host name: letters, digits and `-`, at most 63
+	 * characters. "Garage ESP32" becomes "Garage-ESP32"; an empty result keeps the firmware's default.
+	 */
+	static hostname(name: string) {
+		return name
+			.normalize("NFKD")
+			// Accents split off by NFKD: "Büro" → "Buro".
+			.replace(/\p{M}/gu, "")
+			.replace(/[^A-Za-z0-9-]+/g, "-")
+			.replace(/-{2,}/g, "-")
+			.slice(0, 63)
+			.replace(/^-+|-+$/g, "");
 	}
 }
 
