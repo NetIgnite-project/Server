@@ -245,7 +245,7 @@ export const devices = sqliteTable(
  * @deprecated Use DB.Tables.deviceSshLogins to access this table.
  *
  * Where the device's agent logs in over SSH to shut the device down or reboot it. No secrets: the
- * agent logs in with its own keys (`agents.ssh_keys`). The SQL name is from 2.0.0-beta.2, which
+ * agent logs in with its own keys (`agents.ssh_keys`). The SQL name is from 2.0.0, which
  * stored passwords and server-generated keys here.
  */
 export const deviceSshLogins = sqliteTable("device_ssh_credentials", {

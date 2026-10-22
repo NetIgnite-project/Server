@@ -148,7 +148,7 @@ export class ConfigHandler {
 		// release (a pre-release only while the repository has no stable release).
 		AGENT_REPO: CS.string().optional(),
 		AGENT_VERSION: CS.string().optional(),
-		// The names from the 2.0.0 betas, still read if the new ones aren't set.
+		// The names from 2.0.0, still read if the new ones aren't set.
 		LINUX_AGENT_REPO: CS.string().optional(),
 		LINUX_AGENT_VERSION: CS.string().optional(),
 

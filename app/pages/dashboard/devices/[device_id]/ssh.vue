@@ -209,7 +209,7 @@ async function copy(text: string) {
 					variant="subtle"
 					icon="i-lucide-radio-tower"
 					title="This device's agent can't log in over SSH right now"
-					description="SSH needs an online agent in the device's network: an ESP32 with firmware 2.0.0 or newer, or a Linux agent 1.0.0 or newer in Wake-on-LAN mode, connected to this server over HTTPS. Choose it as the device's agent (General tab)."
+					description="SSH needs an online agent in the device's network: an ESP32 with firmware newer than 2.0.0, or a Linux agent newer than 1.0.0 in Wake-on-LAN mode, connected to this server over HTTPS. Choose it as the device's agent (General tab)."
 				/>
 
 				<form class="space-y-5" @submit.prevent="save">

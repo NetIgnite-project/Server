@@ -67,7 +67,7 @@ address or IP setting is only kept if the agent reaches the server with it withi
 
 Off by default: an admin turns it on under **Server Settings** (`ssh_enabled`). For devices that
 can't run the agent themselves, the device's agent in the same network (an ESP32 with firmware
-2.0.0 or newer, or a Linux agent 1.0.0 or newer in Wake-on-LAN mode) logs in over SSH.
+newer than 2.0.0, or a Linux agent newer than 1.0.0 in Wake-on-LAN mode) logs in over SSH.
 
 **No secrets on the server.** Each agent creates two Ed25519 key pairs of its own, one for
 shutdown and one for reboot, keeps the private keys and reports only the public keys (HELLO
@@ -98,7 +98,7 @@ curl -fsSL https://<server>/install/macos.sh | sudo sh -s -- <enrollment-token> 
 
 The scripts download the agent from the [Agent-Linux](https://github.com/NetIgnite-project/Agent-Linux)
 releases (`NETIGNITE_AGENT_REPO`; the newest stable release, a pre-release only while there is
-none, or the tag in `NETIGNITE_AGENT_VERSION`; the betas' `NETIGNITE_LINUX_AGENT_*` names still
+none, or the tag in `NETIGNITE_AGENT_VERSION`; 2.0.0's `NETIGNITE_LINUX_AGENT_*` names still
 work), check it against `SHA256SUMS`, pair it and install the service (systemd, launchd or a
 scheduled task). Any of the three can be a device's **Agent on the device**; only the Linux agent
 has Wake-on-LAN mode.

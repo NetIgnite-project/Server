@@ -1,5 +1,26 @@
 # Changelog
 
+## Unreleased
+
+- **SSH without secrets on the server.** The server no longer stores SSH passwords or private keys.
+  Each agent (the next ESP32 firmware and Agent-Linux release, Linux in Wake-on-LAN mode) creates
+  two key pairs of its own, one for shutdown and one for reboot, and reports only the public keys.
+  The SSH tab shows one `authorized_keys` line per key with a forced command, so each key can run
+  exactly its command, on Windows too. Requests are renamed: `SSH_EXEC` is now `SSH_POWER`, the
+  capability `ssh` is now `ssh.power`, and neither carries credentials. Agents only offer SSH over
+  TLS and allow 10 SSH logins a minute. Agents from 2.0.0 (ESP32) and 1.0.0 (Linux) keep working,
+  but without SSH until they are updated.
+- **SSH is off by default.** Admins turn it on under Server Settings (`ssh_enabled`).
+- **Windows and macOS agents.** New agent kinds `windows` and `macos` (the next Agent-Linux release
+  runs on both), with install scripts at `/install/windows.ps1` and `/install/macos.sh`. Any Linux,
+  Windows or macOS agent can be a device's **Agent on the device** (was "Linux agent on the
+  device"). `NETIGNITE_AGENT_REPO` / `NETIGNITE_AGENT_VERSION` replace
+  `NETIGNITE_LINUX_AGENT_REPO` / `_VERSION`, which still work.
+- `NETIGNITE_SECRETS_KEY` is gone. After updating from 2.0.0: remove the old `authorized_keys`
+  lines that the server generated (or the password logins) from your devices, delete
+  `config/secrets.key`, update the agents, turn SSH on, and add the two new lines from each
+  device's SSH tab.
+
 ## 2.0.0 (2026-10-21)
 
 The first stable release of NetIgnite v2: the server rewritten from scratch, with new agents for
@@ -21,12 +42,11 @@ the ESP32 (firmware 2.0.0) and for Linux (Agent-Linux 1.0.0). It includes everyt
 
 - Wake-on-LAN through an ESP32 or Linux agent, and status checks by MAC (IPv6 link-local), IPv4,
   IPv6, TCP port, SSH port or the Linux agent on the device.
-- Shutdown and reboot through the agent on the device (Linux, Windows or macOS; recommended), or
-  over SSH through the device's network agent, with keys only the agent holds, each limited to one
-  command.
+- Shutdown and reboot through the Linux agent on the device (recommended), or over SSH with a login
+  restricted to these two commands.
 - Sharing devices with other users as viewer, operator or manager.
 - ESP32 web installer, firmware updates over the network with automatic rollback, and a console.
-- The NetIgnite agent for Linux, Windows and macOS, with a one-line installer.
+- Linux agent with a one-line installer.
 - Installable as an app (PWA); REST API with API keys and an OpenAPI reference at `/api/docs/v1`.
 
 ### Changes since 2.0.0-beta.2
@@ -35,22 +55,6 @@ the ESP32 (firmware 2.0.0) and for Linux (Agent-Linux 1.0.0). It includes everyt
   imported, with the import command.
 - The Linux agent install script installs the newest stable Agent-Linux release, and a pre-release
   only while there is none (before: the newest release, pre-releases included).
-- **SSH without secrets on the server.** The server no longer stores SSH passwords or private keys.
-  Each agent (ESP32 firmware 2.0.0, Agent-Linux 1.0.0 in Wake-on-LAN mode) creates two key pairs
-  of its own, one for shutdown and one for reboot, and reports only the public keys. The SSH tab
-  shows one `authorized_keys` line per key with a forced command, so each key can run exactly its
-  command, on Windows too. Requests are renamed: `SSH_EXEC` is now `SSH_POWER`, the capability
-  `ssh` is now `ssh.power`, and neither carries credentials. Agents only offer SSH over TLS and
-  allow 10 SSH logins a minute.
-- **SSH is off by default.** Admins turn it on under Server Settings (`ssh_enabled`).
-- **Windows and macOS agents.** New agent kinds `windows` and `macos` (Agent-Linux 1.0.0 runs on
-  both), with install scripts at `/install/windows.ps1` and `/install/macos.sh`. Any Linux, Windows
-  or macOS agent can be a device's **Agent on the device** (was "Linux agent on the device").
-  `NETIGNITE_AGENT_REPO` / `NETIGNITE_AGENT_VERSION` replace `NETIGNITE_LINUX_AGENT_REPO` /
-  `_VERSION`, which still work.
-- `NETIGNITE_SECRETS_KEY` is gone. After updating from a beta: remove the old `authorized_keys`
-  lines that the server generated (or the password logins) from your devices, delete
-  `config/secrets.key`, turn SSH on, and add the two new lines from each device's SSH tab.
 
 ## 2.0.0-beta.2 (2026-10-21)
 
