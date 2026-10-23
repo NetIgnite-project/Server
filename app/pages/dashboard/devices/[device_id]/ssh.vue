@@ -146,11 +146,12 @@ async function remove() {
 	await device.refresh?.();
 }
 
-// Accounts that can do anything: if a line lost its forced command, the key could too.
+// Accounts that can do anything: if a line lost its forced command, the key could too. "all" would
+// make even the sudoers line apply to everyone.
 const privilegedUser = computed(
 	() =>
 		form.os === "posix" &&
-		["root", "administrator", "admin"].includes(
+		["root", "administrator", "admin", "all"].includes(
 			form.username.trim().toLowerCase().split("\\").pop() ?? "",
 		),
 );
