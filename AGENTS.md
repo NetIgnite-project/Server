@@ -68,7 +68,9 @@ Follow the LeiCraftMC Style Guides: https://github.com/LeiCraftMC/Style-Guides.
 - **Console** (`server/lib/agents/console.ts`, `/ws/console`): the browser authenticates with its
   first message (`{type:"auth", token, agent_id}`), owner only, Origin must be NETIGNITE_APP_URL;
   the session is checked again every minute.
-- **SSH** (`server/lib/ssh/`): off unless the server setting `ssh_enabled` is on. The server
+- **SSH** (`server/lib/ssh/`): off unless the server setting `ssh_enabled` is on. Code that sends
+  SSH requests reads logins through `SshLogins.usable`/`usableDeviceIDs`, which return nothing
+  while it's off; the routes that change a login go through `refuseSshChange`. The server
   stores no secrets: agents keep their own key pairs (one for shutdown, one for reboot) and report
   the public keys in HELLO (`agents.ssh_keys`); `SshLogins.setupHints` turns them into
   forced-command `authorized_keys` lines. `SSH_CHECK`/`SSH_POWER` carry only host, port, user and

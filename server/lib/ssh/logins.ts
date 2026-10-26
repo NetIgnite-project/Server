@@ -23,6 +23,7 @@ export class SshLogins {
 		return (await RuntimeMetadata.getSettings()).ssh_enabled;
 	}
 
+	/** The device's login, also while SSH is off (to show and edit it). */
 	static get(deviceID: number) {
 		return (
 			DB.instance()
@@ -33,9 +34,21 @@ export class SshLogins {
 		);
 	}
 
-	/** Devices (of `deviceIDs`) whose SSH login has a trusted host key. */
-	static trustedDeviceIDs(deviceIDs: number[]) {
-		if (deviceIDs.length === 0) return new Set<number>();
+	/**
+	 * The device's login for shutting it down or rebooting it: null while SSH is off. Everything
+	 * that would send an SSH request reads the login through here, so turning SSH off can't be
+	 * bypassed by a caller that forgets to check.
+	 */
+	static async usable(deviceID: number) {
+		return (await this.enabled()) ? this.get(deviceID) : null;
+	}
+
+	/**
+	 * Devices (of `deviceIDs`) that can be shut down over SSH, as far as the server knows: SSH is
+	 * on and their login has a trusted host key.
+	 */
+	static async usableDeviceIDs(deviceIDs: number[]) {
+		if (deviceIDs.length === 0 || !(await this.enabled())) return new Set<number>();
 		const rows = DB.instance()
 			.select({ device_id: DB.Tables.deviceSshLogins.device_id })
 			.from(DB.Tables.deviceSshLogins)
@@ -120,34 +133,34 @@ export class SshLogins {
 		return connection?.hasCapability("ssh.power") ? connection : null;
 	}
 
-	/** The public keys the device's agent reported last (also while it is offline). */
-	static agentKeys(device: DB.Models.Device) {
+	/**
+	 * The public keys the device's agent reported last (also while it is offline), together with
+	 * that agent's id: both come from the same row, so an authorized_keys comment can't name
+	 * another agent than the one whose keys the line holds.
+	 */
+	static agentKeys(device: DB.Models.Device): SshLogins.AgentKeys | null {
 		if (device.agent_id === null) return null;
 		const agent = DB.instance()
-			.select({ ssh_keys: DB.Tables.agents.ssh_keys })
+			.select({ id: DB.Tables.agents.id, ssh_keys: DB.Tables.agents.ssh_keys })
 			.from(DB.Tables.agents)
 			.where(eq(DB.Tables.agents.id, device.agent_id))
 			.get();
-		return agent?.ssh_keys ?? null;
+		return agent?.ssh_keys ? { agentID: agent.id, keys: agent.ssh_keys } : null;
 	}
 
 	/**
 	 * Setup lines for the device: one authorized_keys line per agent key, each forcing its command
 	 * (`restrict`: no forwarding, no terminal), and the sudoers line for POSIX with sudo.
+	 * `agentKeys`: from {@link agentKeys}, null until the device's agent reported keys.
 	 */
-	static setupHints(
-		login: DB.Models.DeviceSshLogin,
-		agentID: number | null,
-		keys: AgentProtocol.SshPublicKeys | null,
-	) {
+	static setupHints(login: DB.Models.DeviceSshLogin, agentKeys: SshLogins.AgentKeys | null) {
 		const sudo = this.sudo(login);
-		const authorizedKeys =
-			keys && agentID !== null
-				? this.ACTIONS.map(
-						(action) =>
-							`restrict,command="${this.command(action, login.os, sudo)}" ${keys[action]} netignite-agent-${agentID}-${action}`,
-					).join("\n")
-				: null;
+		const authorizedKeys = agentKeys
+			? this.ACTIONS.map(
+					(action) =>
+						`restrict,command="${this.command(action, login.os, sudo)}" ${agentKeys.keys[action]} netignite-agent-${agentKeys.agentID}-${action}`,
+				).join("\n")
+			: null;
 
 		let sudoers: string | null = null;
 		if (sudo) {
@@ -171,6 +184,9 @@ export class SshLogins {
 
 export namespace SshLogins {
 	export type Action = (typeof SshLogins.ACTIONS)[number];
+
+	/** An agent's SSH public keys and the agent they belong to. */
+	export type AgentKeys = { agentID: number; keys: AgentProtocol.SshPublicKeys };
 
 	export interface Input {
 		host: string | null;
