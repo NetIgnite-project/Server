@@ -58,9 +58,7 @@ async function toDeviceResponses(userID: number, devices: DevicePermissions.Devi
 	const agents = await getAgentSummaries(
 		devices.flatMap((device) => [device.agent_id, device.host_agent_id]),
 	);
-	const sshTrusted = (await SshLogins.enabled())
-		? SshLogins.trustedDeviceIDs(devices.map((device) => device.id))
-		: new Set<number>();
+	const sshTrusted = await SshLogins.usableDeviceIDs(devices.map((device) => device.id));
 	const favorites = new Set(
 		(
 			await DB.instance()
@@ -651,12 +649,13 @@ router.delete(
 
 // --- SSH login (owner only) ---------------------------------------------------------------------
 
-async function toSshResponse(device: DB.Models.Device): Promise<DevicesModel.Ssh.Response> {
+/** `enabled`: the server setting, which the caller has read already (once per request). */
+function toSshResponse(device: DB.Models.Device, enabled: boolean): DevicesModel.Ssh.Response {
 	const login = SshLogins.get(device.id);
-	const keys = SshLogins.agentKeys(device);
+	const agentKeys = SshLogins.agentKeys(device);
 	const common = {
-		enabled: await SshLogins.enabled(),
-		agent_keys: keys !== null,
+		enabled,
+		agent_keys: agentKeys !== null,
 		agent_ready: SshLogins.agentFor(device) !== null,
 	};
 	if (!login) {
@@ -685,11 +684,21 @@ async function toSshResponse(device: DB.Models.Device): Promise<DevicesModel.Ssh
 		os: login.os,
 		sudo: login.sudo,
 		host_key: login.host_key,
-		...SshLogins.setupHints(login, device.agent_id, keys),
+		...SshLogins.setupHints(login, agentKeys),
 	};
 }
 
 const SSH_DISABLED = "SSH is turned off on this server (Server Settings)";
+
+/**
+ * The gate of the SSH routes that change or use the login: only the owner (403), and only while
+ * an admin has SSH turned on (409). Returns the refusal, or null to go on.
+ */
+async function refuseSshChange(c: Context, device: DevicePermissions.DeviceWithRole) {
+	if (!DevicePermissions.can(device.access_role, "manage")) return forbidden(c, "manage");
+	if (!(await SshLogins.enabled())) return APIResponse.conflict(c, SSH_DISABLED);
+	return null;
+}
 
 router.get(
 	"/:deviceID/ssh",
@@ -708,7 +717,11 @@ router.get(
 	async (c) => {
 		const device = getDevice(c);
 		if (!DevicePermissions.can(device.access_role, "manage")) return forbidden(c, "manage");
-		return APIResponse.success(c, "SSH login retrieved", await toSshResponse(device));
+		return APIResponse.success(
+			c,
+			"SSH login retrieved",
+			toSshResponse(device, await SshLogins.enabled()),
+		);
 	},
 );
 
@@ -734,15 +747,15 @@ router.put(
 
 	async (c) => {
 		const device = getDevice(c);
-		if (!DevicePermissions.can(device.access_role, "manage")) return forbidden(c, "manage");
-		if (!(await SshLogins.enabled())) return APIResponse.conflict(c, SSH_DISABLED);
+		const refused = await refuseSshChange(c, device);
+		if (refused) return refused;
 
 		const body = c.req.valid("json");
 		if (!body.host && !device.status_address) {
 			return APIResponse.badRequest(c, "Enter the device's host name or IP address");
 		}
 		SshLogins.save(device, body);
-		return APIResponse.success(c, "SSH login saved", await toSshResponse(device));
+		return APIResponse.success(c, "SSH login saved", toSshResponse(device, true));
 	},
 );
 
@@ -789,9 +802,8 @@ router.post(
 
 	async (c) => {
 		const device = getDevice(c);
-		if (!DevicePermissions.can(device.access_role, "manage")) return forbidden(c, "manage");
-
-		if (!(await SshLogins.enabled())) return APIResponse.conflict(c, SSH_DISABLED);
+		const refused = await refuseSshChange(c, device);
+		if (refused) return refused;
 
 		const login = SshLogins.get(device.id);
 		const target = login ? SshLogins.target(device, login) : null;
@@ -845,11 +857,11 @@ router.post(
 
 	async (c) => {
 		const device = getDevice(c);
-		if (!DevicePermissions.can(device.access_role, "manage")) return forbidden(c, "manage");
-		if (!(await SshLogins.enabled())) return APIResponse.conflict(c, SSH_DISABLED);
+		const refused = await refuseSshChange(c, device);
+		if (refused) return refused;
 		if (!SshLogins.get(device.id)) return APIResponse.notFound(c, "SSH login not found");
 
 		SshLogins.trust(device.id, c.req.valid("json").host_key);
-		return APIResponse.success(c, "Host key trusted", await toSshResponse(device));
+		return APIResponse.success(c, "Host key trusted", toSshResponse(device, true));
 	},
 );

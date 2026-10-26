@@ -40,7 +40,7 @@ export class DeviceActions {
 			return;
 		}
 
-		const login = (await SshLogins.enabled()) ? SshLogins.get(device.id) : null;
+		const login = await SshLogins.usable(device.id);
 		const target = login ? SshLogins.target(device, login) : null;
 		if (login && target) {
 			if (!target.host_key) {
