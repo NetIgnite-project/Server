@@ -1,9 +1,15 @@
 # Changelog
 
-## Unreleased
+## 2.1.1 (2026-10-26)
+
+- **Security:** nodemailer 10.2.1 (was 9.x). It fixes three advisories in nodemailer's address
+  parser and DNS cache, one of them high (quadratic backtracking on a crafted email address).
+  Sending email works as before.
+
+## 2.1.0 (2026-10-26)
 
 - **SSH without secrets on the server.** The server no longer stores SSH passwords or private keys.
-  Each agent (the next ESP32 firmware and Agent-Linux release, Linux in Wake-on-LAN mode) creates
+  Each agent (the next ESP32 firmware and Agent-Linux 1.1.0, Linux in Wake-on-LAN mode) creates
   two key pairs of its own, one for shutdown and one for reboot, and reports only the public keys.
   The SSH tab shows one `authorized_keys` line per key with a forced command, so each key can run
   exactly its command, on Windows too. Requests are renamed: `SSH_EXEC` is now `SSH_POWER`, the
@@ -11,8 +17,8 @@
   TLS and allow 10 SSH logins a minute. Agents from 2.0.0 (ESP32) and 1.0.0 (Linux) keep working,
   but without SSH until they are updated.
 - **SSH is off by default.** Admins turn it on under Server Settings (`ssh_enabled`).
-- **Windows and macOS agents.** New agent kinds `windows` and `macos` (the next Agent-Linux release
-  runs on both), with install scripts at `/install/windows.ps1` and `/install/macos.sh`. Any Linux,
+- **Windows and macOS agents.** New agent kinds `windows` and `macos` (Agent-Linux 1.1.0 runs on
+  both), with install scripts at `/install/windows.ps1` and `/install/macos.sh`. Any Linux,
   Windows or macOS agent can be a device's **Agent on the device** (was "Linux agent on the
   device"). `NETIGNITE_AGENT_REPO` / `NETIGNITE_AGENT_VERSION` replace
   `NETIGNITE_LINUX_AGENT_REPO` / `_VERSION`, which still work.
